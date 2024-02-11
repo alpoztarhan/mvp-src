@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  mltelefit:
+    build: .
+    volumes: 
+      - ${posearray}:/tmp/inputs    
+      - ${savedmodels}:/tmp/outputs/models    
+    ports:
+        - 8083:8083
+    
+

@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  mltelefit:
+    build: . 
+    volumes: 
+      - ${poseimages}:/tmp/inputs
+      - ${posearray}:/tmp/outputs 
+    ports:
+      - 8083:8083
+
+ 
+
+# volumes:
+#   mltelefitdata:
+#     external: true

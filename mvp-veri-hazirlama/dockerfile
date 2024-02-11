@@ -1,0 +1,38 @@
+FROM node
+#FROM node:lts-alpine
+
+# Create app directory
+WORKDIR /src/app/
+
+# RUN mkdir /data/
+# RUN mkdir /data/outputs/
+# RUN mkdir /data/outputs/obj/
+# RUN mkdir /data/outputs/obj/alakasiz
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+#COPY package*.json ./
+COPY package.json /src/app/
+
+
+
+
+#RUN apt-get update && apt-get install -y curl
+#test esnasında ci kullanalım
+# RUN npm cache clear --force
+# RUN npm i --package-lock-only
+# RUN npm ci
+RUN npm install
+# RUN npm set registry=https://registry.npmjs.org/
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+#COPY . .
+COPY . /src/app/
+
+EXPOSE 8083
+# CMD [ "node", "server.js" ]
+# CMD [ "npm", "start" ]
+CMD [ "npm", "run", "live" ]

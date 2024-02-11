@@ -1,0 +1,16 @@
+{
+  "name": "mvp-veri-hazirlama",
+  "version": "1.0.0",
+  "description": "Image bilgisinden pose bilgisini çıkaran veri hazırlama uygulaması",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "live": "node main.js"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "4.16.0",
+    "canvas": "^2.10.1"
+  },
+  "author": "",
+  "license": "ISC"
+}
