@@ -325,7 +325,7 @@ async function PrepareJsons() {
       //console.log(file);
       let fileExt = file.split(".")[1];
       if (fileExt === "jpg" || fileExt === "png") {
-        console.log("makePrediction başlıyor" + file);
+        console.log("makePrediction başlıyor " + file);
 
         try {
           await makePrediction(
@@ -353,7 +353,15 @@ async function PrepareJsons() {
 
 async function MergeResults() {
   console.log("MergeResults başladık");
+  
   const fs_outputFolders = tf.tidy(() => {
+    if (!fs.existsSync(outputFolder)) {
+      console.log('outputFolder bulunamadı klasör yaratılacak');
+      fs.mkdirSync(outputFolder);
+      console.log('outputFolder yaratıldı');
+
+    }
+
     let tidy_fs_outputFolders = fs.readdirSync(outputFolder); //, (err, folders) => {
     return tidy_fs_outputFolders;
   });

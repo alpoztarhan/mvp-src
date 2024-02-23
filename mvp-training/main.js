@@ -53,7 +53,7 @@ layer objesi init için kullanılabilecek parametreler
 */
 
 var myconfig = {
-  yenimodel: false,
+  yenimodel: true,
   eskiDosyaPath: "file:///tmp/outputs/models/canavar/model.json",
   // trainingDataPath: "./trainingdata/fashion-mnist/fashion-mnist2.js",
   dataFromOjectArray: "/tmp/inputs/sum/sumdata.json",
@@ -62,7 +62,7 @@ var myconfig = {
   modelMimarisi: "sequential",
   runShuffleCombo: true,
   randomTestAfterTraining: true,
-  runSetLayers: false,
+  runSetLayers: true,
   saveModel: true,
   layers: [
     { inputShape: [34], units: 32, activation: "relu" },
