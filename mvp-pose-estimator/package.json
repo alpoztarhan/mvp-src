@@ -1,0 +1,15 @@
+{
+  "name": "mvp-pose-estimator",
+  "version": "1.0.0",
+  "description": "mvp-pose-estimator",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "live" : "node server.js"
+  },
+  "dependencies": {
+    "express": "4.18.2"
+  },
+  "author": "",
+  "license": "ISC"
+}

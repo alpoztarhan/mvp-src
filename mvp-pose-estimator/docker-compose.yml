@@ -1,0 +1,9 @@
+version: '3.9'
+
+services:
+  mvp-pose-estimator:
+    build: .
+    ports:
+        - 8083:8083
+    
+
