@@ -6,130 +6,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pose Estimation with MoveNet (Thunder)</title>
   <!-- Require the peer dependencies of pose-detection. -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script> -->
+  <!-- <script src="tfjs-core.js"></script> -->
+  <script src="tfjs-core_prettier.js"></script>
+  
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script> -->
+  <script src="tfjs-converter_pretty.js"></script>
 
   <!-- You must explicitly require a TF.js backend if you're not using the TF.js union bundle. -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script> -->
+  <script src="tfjs-backend-webgl.js"></script>
   <!-- Alternatively you can use the WASM backend: <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script> -->
 
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script> -->
+  <!-- <script src="pose-detection.js"></script> -->
+  <script src="pose-detection_pretty_local.js"></script>
+  
+  
 </head>
 
 <body>
   <h1>Pose Estimation with MoveNet (Thunder)</h1>
 
+  <label for="labels">Labels</label>
+  <input id="labels" type="checkbox" checked ></input>
   <label for="score-treshold">Score teshold</label>
-  <input id="score-treshold" type="number" value="0.8" step="0.01"></input>
+  <input id="score-treshold" type="number" value="0.4" step="0.01"></input>
+  <br>
   <video id="videoElement" width="640" height="480" autoplay></video>
   <canvas id="outputCanvas" width="640" height="480"></canvas>
 
-  <script>
-    async function setupCamera() {
-      const videoElement = document.getElementById('videoElement');
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-        videoElement.srcObject = stream;
-        return new Promise(resolve => {
-          videoElement.onloadedmetadata = () => {
-            resolve(videoElement);
-          };
-        });
-      } else {
-        throw new Error('Camera not available');
-      }
-    }
+  <script src="script.js"></script>
 
-    async function estimatePose() {
-      console.log('estimatePose çalıştı');
-      const videoElement = await setupCamera();
-      const canvas = document.getElementById('outputCanvas');
-      const ctx = canvas.getContext('2d');
-
-      //const moveNet = await moveNet.SinglePose.load();
-      const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER };
-      const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
-
-      async function detectPose() {
-        console.log('detectPose çalıştı');
-        // const poses = await detector.estimatePoses(image);
-        // const pose = await moveNet.estimatePoses(videoElement, { maxPoses: 1, flipHorizontal: false });
-        const pose = await detector.estimatePoses(videoElement, { maxPoses: 1, flipHorizontal: false });
-        console.log('pose');
-        console.log(pose);
-        console.log('/pose');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (pose.length > 0) {
-          drawPose(pose[0], ctx);
-        }
-        requestAnimationFrame(detectPose);
-      }
-
-      detectPose();
-    }
-
-    function drawPose(pose, ctx) {
-      const keypoints = pose.keypoints;
-      ctx.fillStyle = 'red';
-      ctx.strokeStyle = 'red';
-
-      // Draw keypoints
-      for (let i = 0; i < keypoints.length; i++) {
-        var scoretreshold = document.getElementById('score-treshold').value;
-        const keypoint = keypoints[i];
-        if (keypoint.score > scoretreshold) {
-          ctx.beginPath();
-          ctx.arc(keypoint.x, keypoint.y, 3, 0, 2 * Math.PI);
-          ctx.fill();
-        }
-      }
-
-      // Draw lines between keypoints
-      const adjacentKeyPoints = poseAdjacentKeyPoints(pose);
-      ctx.beginPath();
-      var scoretreshold = document.getElementById('score-treshold').value;
-
-      for (let i = 0; i < adjacentKeyPoints.length; i++) {
-
-        const [point1, point2] = adjacentKeyPoints[i];
-        if (point1.score > scoretreshold && point2.score > scoretreshold) {
-          ctx.moveTo(point1.x, point1.y);
-          ctx.lineTo(point2.x, point2.y);
-        }
-      }
-      ctx.stroke();
-    }
-
-    function poseAdjacentKeyPoints(pose) {
-      const adjacentKeyPoints = [
-        ['nose', 'left_eye'],
-        ['left_eye', 'right_eye'],
-        ['right_eye', 'nose'],
-        ['left_shoulder', 'right_shoulder'],
-        ['left_elbow', 'left_shoulder'],
-        ['right_elbow', 'right_shoulder'],
-        ['left_wrist', 'left_elbow'],
-        ['right_wrist', 'right_elbow'],
-        ['left_hip', 'right_hip'],
-        ['left_knee', 'left_hip'],
-        ['right_knee', 'right_hip'],
-        ['left_ankle', 'left_knee'],
-        ['right_ankle', 'right_knee']
-      ];
-
-      return adjacentKeyPoints.map(([point1, point2]) => {
-        const keypoint1 = pose.keypoints.find(kp => kp.name === point1);
-        const keypoint2 = pose.keypoints.find(kp => kp.name === point2);
-        // if (!keypoint1) console.error(`Keypoint '${point1}' not found in pose`);
-        // if (!keypoint2) console.error(`Keypoint '${point2}' not found in pose`);
-        return [keypoint1, keypoint2];
-      });
-    }
-
-    console.log('estimatePose tetiklenecek');
-
-    estimatePose();
-  </script>
 </body>
 
 </html>
