@@ -1,6 +1,10 @@
-Layers Model Transfer Learning with MobileNet v2 in TensorFlow.js
+mvp-pose-estimator
 =================
 
-Learn how to make your very own Teachable Machine that can use the power of transfer learning to perform image recognition live in the browser powered by TensorFlow.js
+bu uygulama ile; 
 
-This demo uses a layers base model instead of a graph base model.
+önce browser üzerinde webcamden okunan görselin iskelet tahminleri yapılmakta
+
+sonra daha önceden train edilen model ile iskelet tahminine dayanarak görseldeki kişinin pozisyon labeli tahminlenmektedir.
+
+uygulamada kullanılacak pre trained model www klasörü altına eklenmeli ve main bloğu altında tanıtılmalıdır
