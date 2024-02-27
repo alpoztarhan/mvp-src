@@ -21,6 +21,8 @@
   <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script> -->
   <!-- <script src="pose-detection.js"></script> -->
   <script src="pose-detection_pretty_local.js"></script>
+
+  <script src="tfjs-layers_pretty.js"></script>
   
   
 </head>
@@ -32,6 +34,7 @@
   <input id="labels" type="checkbox" checked ></input>
   <label for="score-treshold">Score teshold</label>
   <input id="score-treshold" type="number" value="0.4" step="0.01"></input>
+  <input id="outputindex" type="number" step="1"></input>
   <br>
   <video id="videoElement" width="640" height="480" autoplay></video>
   <canvas id="outputCanvas" width="640" height="480"></canvas>
