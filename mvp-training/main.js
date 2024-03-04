@@ -1,6 +1,8 @@
 console.log("main.js başladı");
-// const fs = require("fs");
+
+const fs = require("fs");
 const tf = require("@tensorflow/tfjs-node");
+
 
 
 // var counter = 0;
@@ -57,7 +59,9 @@ var myconfig = {
   eskiDosyaPath: "file:///tmp/outputs/models/canavar/model.json",
   // trainingDataPath: "./trainingdata/fashion-mnist/fashion-mnist2.js",
   dataFromOjectArray: "/tmp/inputs/sum/sumdata.json",
-  modelSavePath: 'file:///tmp/outputs/models/' + new Date().toISOString(),
+  modelSavePath: '/tmp/outputs/models/',
+  modelSaveProtocol: 'file:///',
+  modelSaveName: 'canavar',
   labelDictionary: [],
   modelMimarisi: "sequential",
   runShuffleCombo: true,
@@ -99,7 +103,7 @@ var myconfig = {
       shuffle: true,
       validationSplit: 0.3,
       batchSize: 64,
-      epochs: 2000,
+      epochs: 5,
     },
   },
 };
@@ -196,7 +200,47 @@ async function getModel(configobjesi) {
 }
 
 async function setModel(configobjesi, model) {
-  model.save(configobjesi.modelSavePath);
+  //önce zaman damgası ile kaydedelim
+  let mDate = new Date().toISOString();
+  let folderName = mDate.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  const arrayString = JSON.stringify(configobjesi.labelDictionary.map((value, index) => ({ [index + 1]: value })));
+  console.log('model kaydı için kullanılacak path');
+  console.log(configobjesi.modelSaveProtocol + configobjesi.modelSavePath + folderName);
+  await model.save(configobjesi.modelSaveProtocol
+    + configobjesi.modelSavePath
+    + folderName);
+
+  try {
+    if (!fs.existsSync(configobjesi.modelSavePath + folderName)) {
+      console.log('modelSavePath klasörü yaratılacak:' + configobjesi.modelSavePath + folderName);
+      fs.mkdirSync(configobjesi.modelSavePath + folderName);
+    }
+  } catch (err) {
+    console.error('modelSavePath klasörü yaratmada hata err:');
+    console.error(err);
+    throw err;
+  }
+
+
+
+
+  console.log('etiketler yazılacak');
+  console.log(configobjesi.modelSavePath + folderName + "/" + "labels" + ".json");
+  fs.writeFileSync(
+    configobjesi.modelSavePath + folderName + "/" + "labels" + ".json",
+    arrayString
+  );
+
+
+  //sonra isim ile kaydedelim
+  await model.save(configobjesi.modelSaveProtocol
+    + configobjesi.modelSavePath
+    + configobjesi.modelSaveName);
+  fs.writeFileSync(
+    configobjesi.modelSavePath + configobjesi.modelSaveName + "/" + "labels" + ".json",
+    arrayString
+  );
+
 }
 
 async function setLayers(configobjesi, model) {
@@ -409,7 +453,7 @@ async function main(configobjesi) {
 
 
   //console.log('evaluate başlıyor');
-  evaluate(model, configobjesi, INPUTS, OUTPUTS);
+  // evaluate(model, configobjesi, INPUTS, OUTPUTS);
   //console.log('evaluate bitti');
 }
 

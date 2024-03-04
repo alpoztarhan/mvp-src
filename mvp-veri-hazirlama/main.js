@@ -299,11 +299,20 @@ async function PrepareJsons() {
   console.log("etiket klasörleri okundu:" + fs_imageFolders);
   //console.log("folders");
   //console.log(folders);
+  let acceptLabels = ['cambazlik', 'normal', 'tekayak'];
+
   for (let labelindex = 0; labelindex < fs_imageFolders.length; labelindex++) {
     const fs_imageSubFolders = fs_imageFolders[labelindex];
 
+    if (fs_imageSubFolders === '.git' || !acceptLabels.includes(fs_imageSubFolders)) {
+      continue;
+    }
     // await fs_imageFolders.forEach(async (fs_imageSubFolders) => {
     console.log("fs_imageSubFolders işleniyor:" + fs_imageSubFolders);
+    if (fs_imageSubFolders === 'alakasız') {
+      throw error;
+    }
+
     //console.log(folder);
     //console.log("imageFolder + '/' + folder");
     //console.log(imageFolder + "/" + folder);
@@ -466,13 +475,46 @@ async function Main() {
   // init tensorflow
   await tf.enableProdMode();
   console.log('tf.enableProdMode bitti');
-  await tf.setBackend("tensorflow");
+  //alternatifleri buraya ekleyelim istediğimiz istediğimiz zaman kullanabilelim
+  //https://www.tensorflow.org/js/guide/platform_environment
+  //normali tensorflow
+  console.log(tf.getBackend());
+
+  // cpu
+  // await tf.registerBackend("cpu");
+  // await tf.setBackend("cpu");
+  //Error: Expect the current backend to be "tensorflow", but got "cpu"
+  //tf-core.node.js:454:15
+  
+  // webgl
+  // await tf.registerBackend("webgl");
+  // await tf.setBackend("webgl");
+
+  // wasm
+  // await tf.registerBackend("wasm");
+  // await tf.setBackend("wasm");
+
+  //tensorflow
+  // await tf.setBackend("tensorflow");
   console.log('tf.setBackend bitti');
   await tf.ENV.set("DEBUG", false);
   console.log('tf.ENV.set bitti');
   await tf.ready();
   console.log('tf.ready bitti');
+  //local olmayan alternatifi de olsun
+  // model = await tf.loadGraphModel("https://tfhub.dev/google/tfjs-model/movenet/singlepose/thunder/4");
+  // model = await tf.loadGraphModel('https://tfhub.dev/google/movenet/singlepose/thunder/4');
+  // model = await tf.loadGraphModel("/kaggle/input/movenet/tfjs/singlepose-thunder/4", { fromTFHub: true });
+  // model = await tf.loadGraphModel("https://storage.googleapis.com/kaggle-models-data/1027/1191/bundle/archive.tar.gz");
+
+  //malesef local olmayan alternatifleri kendi paketlerinin içinden atılan 
+  //requestler ile mümkün kılmışlar
+  //şuanda başka bir bağımlılık daha ekleyip kodun işleyişinde yapısal değişiklik yapmadan
+  //local olmayan alternatif pek mümkün görünmüyor
+  //yada kendi paketlerinin network üzerindeki aktivitesi izlenerek aynı requesti atmak denenebilir
+  //çok efor sarfettireceği için bundan devam etmiyorum bu konuyu tekrar konuşalım
   model = await tf.loadGraphModel(modelOptions.modelPath);
+  
   console.log('tf.loadGraphModel bitti');
 
   try {
