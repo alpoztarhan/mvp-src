@@ -42,44 +42,92 @@ let TRAINING_DATA = {
   outputs: [],
 };
 
+let clog = (level, logtxt) => {
+  if (level) {
+    console.log(logtxt);
+  }
+};
+
+async function Main() {
+  // init tensorflow
+  await tf.enableProdMode();
+  clog(3, "tf.enableProdMode bitti");
+  //alternatifleri buraya ekleyelim istediğimiz istediğimiz zaman kullanabilelim
+  //https://www.tensorflow.org/js/guide/platform_environment
+  //normali tensorflow
+  clog(3, tf.getBackend());
+
+  //tensorflow
+  // await tf.setBackend("tensorflow");
+  clog(3, "tf.setBackend bitti");
+  await tf.ENV.set("DEBUG", false);
+  clog(3, "tf.ENV.set bitti");
+  await tf.ready();
+  clog(3, "tf.ready bitti");
+  //local olmayan alternatifi de olsun
+  model = await tf.loadGraphModel(modelOptions.modelPath);
+
+  clog(3, "tf.loadGraphModel bitti");
+
+  try {
+    await PrepareJsons();
+    clog(3, "PrepareJsons bitti");
+  } catch (error) {
+    clog(3, "PrepareJsons hata");
+    throw error;
+  }
+
+  await MergeResults();
+  clog(3, "MergeResults bitti");
+  try {
+    await SaveSum(birlestirfolder);
+    clog(3, "SaveSum bitti");
+  } catch (error) {
+    clog(3, "SaveSum hata");
+    clog(3, error);
+  }
+}
+
 async function saveJson(res, img) {
-  console.log('saveJson başvuru geldi');
-  console.log(img.fileName);
+  clog(3, "saveJson başvuru geldi");
+  clog(3, img.fileName);
   // /tmp/inputs/alakasiz/Image_78 (5).jpg
   let label = img.fileName.split("/")[3];
-  console.log('label tespit edildi:' + label);
+  clog(3, "label tespit edildi:" + label);
 
   let fileNameExt = img.fileName.split("/")[4];
   let fileName = fileNameExt.split(".")[0];
 
-  console.log('fileName');
-  console.log(fileName);
+  clog(3, "fileName");
+  clog(3, fileName);
 
   try {
     if (!fs.existsSync("/tmp/outputs/obj")) {
-      console.log('/tmp/outputs/obj klasörü yaratılacak:');
+      clog(3, "/tmp/outputs/obj klasörü yaratılacak:");
       fs.mkdirSync("/tmp/outputs/obj/");
-      console.log('/tmp/outputs/obj klasörü yaratıldı');
+      clog(3, "/tmp/outputs/obj klasörü yaratıldı");
     }
   } catch (error) {
-    console.log('/tmp/outputs/obj klasörü yaratmada hata');
-    console.log(error);
+    clog(3, "/tmp/outputs/obj klasörü yaratmada hata");
+    clog(3, error);
   }
 
   try {
     if (!fs.existsSync("/tmp/outputs/obj/" + label)) {
-      console.log('label klasörü yaratılacak:' + label);
-      console.log("/tmp/outputs/obj/" + label);
+      clog(3, "label klasörü yaratılacak:" + label);
+      clog(3, "/tmp/outputs/obj/" + label);
       fs.mkdirSync("/tmp/outputs/obj/" + label);
-
     }
   } catch (err) {
-    console.error('label klasörü yaratmada hata err:');
+    console.error("label klasörü yaratmada hata err:");
     console.error(err);
     throw err;
   }
 
-  console.log("/tmp/outputs/obj/" + label + "/" + fileName + ".json dosyası yaratılacak");
+  clog(
+    1,
+    "/tmp/outputs/obj/" + label + "/" + fileName + ".json dosyası yaratılacak"
+  );
 
   tf.tidy(() => {
     fs.writeFileSync(
@@ -87,19 +135,16 @@ async function saveJson(res, img) {
       JSON.stringify(res)
       // ,(err) => {
       //   if (err) {
-      //     console.log("writeFile err");
-      //     console.log(err);
+      //     clog(3,"writeFile err");
+      //     clog(3,err);
       //   } else {
-      //     //console.log("outputjson yazıldı");
+      //     //clog(3,"outputjson yazıldı");
       //   }
       // }
     );
   });
 
-
-
-
-  console.log('fs.writeFile tamamlandı');
+  clog(3, "fs.writeFile tamamlandı");
 }
 
 async function saveImage(res, img) {
@@ -156,13 +201,12 @@ async function saveImage(res, img) {
   const outImage = `/tmp/outputs/${path.basename(img.fileName)}`;
   const out = fs.createWriteStream(outImage);
   out.on("finish", () =>
-    console.log(
+    clog(
+      1,
       "Created output image: " + outImage + " size: " + c.width + "x" + c.height
     )
   );
-  out.on("error", (err) =>
-    console.log("Error creating image:" + outImage + err)
-  );
+  out.on("error", (err) => clog(3, "Error creating image:" + outImage + err));
   const stream = c.createJPEGStream({
     quality: 0.6,
     progressive: true,
@@ -184,19 +228,17 @@ async function loadImage(fileName, inputSize) {
     //böylece pnglerin sadece renk barındıran bilgilerini alacak bir shape'e sahip oluyoruz
     const tensor = casted.slice([0, 0, 0, 0], [1, inputSize, inputSize, 3]); // Keep only the first 3 channels
 
-    //aşağıdaki kod 3 kanallı jpg dosyalarını da 4 kanallı hale getiriyor 
+    //aşağıdaki kod 3 kanallı jpg dosyalarını da 4 kanallı hale getiriyor
     //bütün pikseller için alfa değerini 1 yapıyor
     //böylece jpgleri pngler ile aynı shapede çıktı verecek hale getirmiş oluyoruz
     //henüz çalıştıramadık
-    // console.log('tf.tensor');
-    // console.log(tf.tensor);
+    // clog(3,'tf.tensor');
+    // clog(3,tf.tensor);
     // const tensor = tf.cond(
     //   tf.equal(tf.tensor.shape(casted).slice(-1).squeeze(), 3),
     //   () => tf.concat([casted, tf.onesLike(casted)], -1),
     //   () => casted
     // );
-
-
 
     const img = {
       fileName,
@@ -212,8 +254,8 @@ async function loadImage(fileName, inputSize) {
 
 async function processResults(res, img) {
   const data = res.arraySync();
-  //console.log("Tensor output shape:" + res.shape);
-  // //console.log(data);
+  //clog(3,"Tensor output shape:" + res.shape);
+  // //clog(3,data);
   res.dispose();
   const kpt = data[0][0];
   const parts = [];
@@ -233,13 +275,10 @@ async function processResults(res, img) {
 }
 
 async function makePrediction(imageFile) {
-
-
-
   // load model
-  //console.log("Loaded model" + JSON.stringify(modelOptions) + " tensors:" + tf.engine().memory().numTensors + " bytes:" + tf.engine().memory().numBytes);
+  //clog(3,"Loaded model" + JSON.stringify(modelOptions) + " tensors:" + tf.engine().memory().numTensors + " bytes:" + tf.engine().memory().numBytes);
   // @ts-ignore
-  //console.log("Model Signature" + JSON.stringify(model.signature));
+  //clog(3,"Model Signature" + JSON.stringify(model.signature));
 
   // load image and get approprite tensor for it
   let inputSize = Object.values(model.modelSignature["inputs"])[0].tensorShape
@@ -249,26 +288,31 @@ async function makePrediction(imageFile) {
   //  const imageFile = './trainingdata/ornek.jpg';
 
   if (!imageFile || !fs.existsSync(imageFile)) {
-    //console.log("Specify a valid image file:" + imageFile);
+    //clog(3,"Specify a valid image file:" + imageFile);
     process.exit();
   }
   const img = await loadImage(imageFile, inputSize);
-  //console.log( "Loaded image:" + img.fileName + "inputShape:" + img.inputShape + "modelShape:" + img.modelShape + "decoded size:" + img.size );
+  //clog(3, "Loaded image:" + img.fileName + "inputShape:" + img.inputShape + "modelShape:" + img.modelShape + "decoded size:" + img.size );
 
   // run actual prediction
   const t0 = process.hrtime.bigint();
   // for (let i = 0; i < 99; i++) model.execute(img.tensor); // benchmarking
   const res = model.execute(img.tensor);
   const t1 = process.hrtime.bigint();
-  //console.log( "Inference time:" +Math.round(parseInt((t1 - t0).toString()) / 1000 / 1000) + "ms" );
+  //clog(3, "Inference time:" +Math.round(parseInt((t1 - t0).toString()) / 1000 / 1000) + "ms" );
 
   // process results
   const results = await processResults(res, img);
   const t2 = process.hrtime.bigint();
-  console.log("Processing time:" + Math.round(parseInt((t2 - t1).toString()) / 1000 / 1000) + "ms");
+  clog(
+    1,
+    "Processing time:" +
+      Math.round(parseInt((t2 - t1).toString()) / 1000 / 1000) +
+      "ms"
+  );
 
   // print results
-  //console.log("Results:" + JSON.stringify(results));
+  //clog(3,"Results:" + JSON.stringify(results));
 
   // save processed image
   // await saveImage(results, img);
@@ -276,7 +320,6 @@ async function makePrediction(imageFile) {
   //save json
   try {
     await saveJson(results, img);
-
   } catch (error) {
     throw error;
   }
@@ -285,115 +328,115 @@ async function makePrediction(imageFile) {
 
   // img.dispose();
   tf.dispose(img);
-
 }
 
 async function PrepareJsons() {
-  console.log("PrepareJsons başladık");
+  clog(3, "PrepareJsons başladık");
 
   const fs_imageFolders = tf.tidy(() => {
     let tidy_fs_imageFolders = fs.readdirSync(imageFolder); //, (err, folders,) => {
     return tidy_fs_imageFolders;
   });
   // return;
-  console.log("etiket klasörleri okundu:" + fs_imageFolders);
-  //console.log("folders");
-  //console.log(folders);
-  let acceptLabels = ['cambazlik', 'normal', 'tekayak'];
+  clog(3, "etiket klasörleri okundu:" + fs_imageFolders);
+  //clog(3,"folders");
+  //clog(3,folders);
+  let acceptLabels = ["cambazlik", "normal", "tekayak"];
 
   for (let labelindex = 0; labelindex < fs_imageFolders.length; labelindex++) {
     const fs_imageSubFolders = fs_imageFolders[labelindex];
 
-    if (fs_imageSubFolders === '.git' || !acceptLabels.includes(fs_imageSubFolders)) {
+    if (
+      fs_imageSubFolders === ".git" ||
+      !acceptLabels.includes(fs_imageSubFolders)
+    ) {
       continue;
     }
     // await fs_imageFolders.forEach(async (fs_imageSubFolders) => {
-    console.log("fs_imageSubFolders işleniyor:" + fs_imageSubFolders);
-    if (fs_imageSubFolders === 'alakasız') {
+    clog(3, "fs_imageSubFolders işleniyor:" + fs_imageSubFolders);
+    if (fs_imageSubFolders === "alakasız") {
       throw error;
     }
 
-    //console.log(folder);
-    //console.log("imageFolder + '/' + folder");
-    //console.log(imageFolder + "/" + folder);
+    //clog(3,folder);
+    //clog(3,"imageFolder + '/' + folder");
+    //clog(3,imageFolder + "/" + folder);
 
     const imageFiles = tf.tidy(() => {
-      let tidy_imageFiles = fs.readdirSync(imageFolder + "/" + fs_imageSubFolders); //, (err, files) => {
+      let tidy_imageFiles = fs.readdirSync(
+        imageFolder + "/" + fs_imageSubFolders
+      ); //, (err, files) => {
       return tidy_imageFiles;
     });
 
-
-    console.log(
-      "fs_imageSubFolders altında dosyalar tespit edildi:" + imageFiles
-    );
-    //console.log(files);
+    clog(3, "fs_imageSubFolders altında dosyalar tespit edildi:" + imageFiles);
+    //clog(3,files);
     for (let index = 0; index < imageFiles.length; index++) {
       // await imageFiles.forEach(async (file) => {
       const file = imageFiles[index];
-      console.log("dosya işleniyor:" + file);
-      //console.log(file);
+      clog(3, "dosya işleniyor:" + file);
+      //clog(3,file);
       let fileExt = file.split(".")[1];
       if (fileExt === "jpg" || fileExt === "png") {
-        console.log("makePrediction başlıyor " + file);
+        clog(3, "makePrediction başlıyor " + file);
 
         try {
           await makePrediction(
             imageFolder + "/" + fs_imageSubFolders + "/" + file
-          ).then((x) => console.log("makePrediction gerçekten bitti label:" + fs_imageSubFolders));
+          ).then((x) =>
+            clog(
+              1,
+              "makePrediction gerçekten bitti label:" + fs_imageSubFolders
+            )
+          );
         } catch (error) {
           throw error;
         }
-
       } else {
         islenmeyenDosyalar.push(file);
       }
-      //console.log("makePrediction bitti file:" + file);
+      //clog(3,"makePrediction bitti file:" + file);
     }
 
-    console.log(
+    clog(
+      1,
       "trainin datası hazırlandı işlenmeyen dosyalar" +
-      JSON.stringify(islenmeyenDosyalar)
+        JSON.stringify(islenmeyenDosyalar)
     );
     // });
   }
-  console.log("PrepareJsons tamamlandı");
+  clog(3, "PrepareJsons tamamlandı");
 }
 // });
 
 async function MergeResults() {
-  console.log("MergeResults başladık");
-  
+  clog(3, "MergeResults başladık");
+
   const fs_outputFolders = tf.tidy(() => {
     if (!fs.existsSync(outputFolder)) {
-      console.log('outputFolder bulunamadı klasör yaratılacak');
+      clog(3, "outputFolder bulunamadı klasör yaratılacak");
       fs.mkdirSync(outputFolder);
-      console.log('outputFolder yaratıldı');
-
+      clog(3, "outputFolder yaratıldı");
     }
 
     let tidy_fs_outputFolders = fs.readdirSync(outputFolder); //, (err, folders) => {
     return tidy_fs_outputFolders;
   });
 
-  // console.log("birleştirme başladı");
-  // console.log("folders");
-  // console.log(folders);
+  // clog(3,"birleştirme başladı");
+  // clog(3,"folders");
+  // clog(3,folders);
 
   fs_outputFolders.forEach((folder) => {
-
-
     const fs_outputfiles = tf.tidy(() => {
       let tidy_fs_outputfiles = fs.readdirSync(outputFolder + "/" + folder); //, (err, files) => {
       return tidy_fs_outputfiles;
     });
 
-
-
     fs_outputfiles.forEach((file) => {
-      //console.log("dosya okundu");
-      // console.log('files');
-      // console.log(files);
-
+      //clog(3,"dosya okundu");
+      // clog(3,'files');
+      // clog(3,files);
 
       const data = tf.tidy(() => {
         let tidy_data = fs.readFileSync(
@@ -403,13 +446,11 @@ async function MergeResults() {
         return tidy_data;
       });
 
-
-
-      //console.log("data");
-      //console.log(data);
+      //clog(3,"data");
+      //clog(3,data);
       var mInput = JSON.parse(data);
-      // console.log("mArray");
-      // console.log(mArray);
+      // clog(3,"mArray");
+      // clog(3,mArray);
       TRAINING_DATA.inputs.push(mInput);
       TRAINING_DATA.outputs.push(folder);
     });
@@ -417,128 +458,44 @@ async function MergeResults() {
   return;
 }
 
-async function SaveSum() {
-  console.log("SaveSum başladık");
+async function SaveSum(birlestirfolder) {
+  clog(3, "SaveSum başladık");
 
-  // console.log("TRAINING_DATA");
-  // console.log(JSON.stringify(TRAINING_DATA));
+  // clog(3,"TRAINING_DATA");
+  // clog(3,JSON.stringify(TRAINING_DATA));
 
   try {
     // if (!fs.existsSync(birlestirfolder)) {
-    //   console.log(birlestirfolder + ' klasörü yaratılacak:');
-      fs.mkdirSync(birlestirfolder);
-    //   console.log(birlestirfolder + ' klasörü yaratıldı:');
+    //   clog(3,birlestirfolder + ' klasörü yaratılacak:');
+    fs.mkdirSync(birlestirfolder);
+    //   clog(3,birlestirfolder + ' klasörü yaratıldı:');
     // } else {
-    //   console.log(birlestirfolder + ' klasörü zaten var');
+    //   clog(3,birlestirfolder + ' klasörü zaten var');
     // }
   } catch (error) {
-    console.log(birlestirfolder + '  klasörü yaratmada hata:');
-    console.log(error);
+    clog(3, birlestirfolder + "  klasörü yaratmada hata:");
+    clog(3, error);
   }
 
-console.log('tidy başlayacak');
+  clog(3, "tidy başlayacak");
   tf.tidy(() => {
     fs.writeFileSync(
-      birlestirfolder + '/' + "sumdata.json",
+      birlestirfolder + "/" + "sumdata.json",
       JSON.stringify(TRAINING_DATA),
       (err) => {
         if (err) {
-          console.log("sum writeFile err");
-          console.log(err);
+          clog(3, "sum writeFile err");
+          clog(3, err);
         } else {
-          console.log("sum yazıldı");
+          clog(3, "sum yazıldı");
         }
       }
     );
   });
-console.log('tidy bitti');
-
-
-}
-
-async function Main() {
-
-  var counter = 0;
-
-  function dakikaSayac() {
-
-    console.log("işlem başlayalı " + ++counter + " dakika geçti");
-
-    setTimeout(dakikaSayac, 60000);
-
-  }
-
-  setTimeout(dakikaSayac, 60000);
-
-
-
-  // init tensorflow
-  await tf.enableProdMode();
-  console.log('tf.enableProdMode bitti');
-  //alternatifleri buraya ekleyelim istediğimiz istediğimiz zaman kullanabilelim
-  //https://www.tensorflow.org/js/guide/platform_environment
-  //normali tensorflow
-  console.log(tf.getBackend());
-
-  // cpu
-  // await tf.registerBackend("cpu");
-  // await tf.setBackend("cpu");
-  //Error: Expect the current backend to be "tensorflow", but got "cpu"
-  //tf-core.node.js:454:15
-  
-  // webgl
-  // await tf.registerBackend("webgl");
-  // await tf.setBackend("webgl");
-
-  // wasm
-  // await tf.registerBackend("wasm");
-  // await tf.setBackend("wasm");
-
-  //tensorflow
-  // await tf.setBackend("tensorflow");
-  console.log('tf.setBackend bitti');
-  await tf.ENV.set("DEBUG", false);
-  console.log('tf.ENV.set bitti');
-  await tf.ready();
-  console.log('tf.ready bitti');
-  //local olmayan alternatifi de olsun
-  // model = await tf.loadGraphModel("https://tfhub.dev/google/tfjs-model/movenet/singlepose/thunder/4");
-  // model = await tf.loadGraphModel('https://tfhub.dev/google/movenet/singlepose/thunder/4');
-  // model = await tf.loadGraphModel("/kaggle/input/movenet/tfjs/singlepose-thunder/4", { fromTFHub: true });
-  // model = await tf.loadGraphModel("https://storage.googleapis.com/kaggle-models-data/1027/1191/bundle/archive.tar.gz");
-
-  //malesef local olmayan alternatifleri kendi paketlerinin içinden atılan 
-  //requestler ile mümkün kılmışlar
-  //şuanda başka bir bağımlılık daha ekleyip kodun işleyişinde yapısal değişiklik yapmadan
-  //local olmayan alternatif pek mümkün görünmüyor
-  //yada kendi paketlerinin network üzerindeki aktivitesi izlenerek aynı requesti atmak denenebilir
-  //çok efor sarfettireceği için bundan devam etmiyorum bu konuyu tekrar konuşalım
-  model = await tf.loadGraphModel(modelOptions.modelPath);
-  
-  console.log('tf.loadGraphModel bitti');
-
-  try {
-    await PrepareJsons();
-    console.log('PrepareJsons bitti');
-  } catch (error) {
-    console.log('PrepareJsons hata');
-    throw(error);
-  }
-
-  await MergeResults();
-  console.log('MergeResults bitti');
-  try {
-    await SaveSum();
-    console.log('SaveSum bitti');
-  } catch (error) {
-    console.log('SaveSum hata');
-    console.log(error);
-  }
-
-
+  clog(3, "tidy bitti");
 }
 
 Main();
-
-
-
+// .then(() => {
+//   clog(3, "İşlem bitti..");
+// });
