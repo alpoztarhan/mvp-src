@@ -43,7 +43,7 @@ let TRAINING_DATA = {
 };
 
 let clog = (level, logtxt) => {
-  if (level) {
+  if (level > 3) {
     console.log(logtxt);
   }
 };
@@ -79,6 +79,7 @@ async function Main() {
 
   await MergeResults();
   clog(3, "MergeResults bitti");
+
   try {
     await SaveSum(birlestirfolder);
     clog(3, "SaveSum bitti");
@@ -87,6 +88,61 @@ async function Main() {
     clog(3, error);
   }
 }
+
+async function PrepareJsons() {
+  clog(3, "PrepareJsons başladık");
+
+  const labelDirs = fs.readdirSync(imageFolder);
+
+  clog(3, "etiket klasörleri okundu:" + labelDirs);
+
+  let acceptLabels = ["cambazlik", "normal", "tekayak"];
+
+  for (let labelindex = 0; labelindex < labelDirs.length; labelindex++) {
+    const labelDir = labelDirs[labelindex];
+
+    if (labelDir === ".git" || !acceptLabels.includes(labelDir)) {
+      continue;
+    }
+
+    clog(5, "labelDir işleniyor:" + labelDir);
+
+    const imageFiles = fs.readdirSync(imageFolder + "/" + labelDir);
+
+    clog(3, "labelDir altında dosyalar tespit edildi:" + imageFiles);
+
+    for (let index = 0; index < imageFiles.length; index++) {
+      const file = imageFiles[index];
+      if (!(index % 10)) clog(5, imageFiles.length - index);
+      clog(3, "dosya işleniyor:" + file);
+
+      let fileExt = file.split(".")[1];
+      if (fileExt === "jpg" || fileExt === "png") {
+        clog(2, "makePrediction başlıyor " + file);
+
+        try {
+          await makePrediction(imageFolder + "/" + labelDir + "/" + file).then(
+            (x) => clog(2, "makePrediction gerçekten bitti label:" + labelDir)
+          );
+        } catch (error) {
+          throw error;
+        }
+      } else {
+        islenmeyenDosyalar.push(file);
+      }
+      //clog(3,"makePrediction bitti file:" + file);
+    }
+
+    clog(
+      2,
+      "training datası hazırlandı işlenmeyen dosyalar" +
+        JSON.stringify(islenmeyenDosyalar)
+    );
+    // });
+  }
+  clog(3, "PrepareJsons tamamlandı");
+}
+// });
 
 async function saveJson(res, img) {
   clog(3, "saveJson başvuru geldi");
@@ -125,7 +181,7 @@ async function saveJson(res, img) {
   }
 
   clog(
-    1,
+    3,
     "/tmp/outputs/obj/" + label + "/" + fileName + ".json dosyası yaratılacak"
   );
 
@@ -133,14 +189,6 @@ async function saveJson(res, img) {
     fs.writeFileSync(
       "/tmp/outputs/obj/" + label + "/" + fileName + ".json",
       JSON.stringify(res)
-      // ,(err) => {
-      //   if (err) {
-      //     clog(3,"writeFile err");
-      //     clog(3,err);
-      //   } else {
-      //     //clog(3,"outputjson yazıldı");
-      //   }
-      // }
     );
   });
 
@@ -202,7 +250,7 @@ async function saveImage(res, img) {
   const out = fs.createWriteStream(outImage);
   out.on("finish", () =>
     clog(
-      1,
+      3,
       "Created output image: " + outImage + " size: " + c.width + "x" + c.height
     )
   );
@@ -224,21 +272,9 @@ async function loadImage(fileName, inputSize) {
     const expanded = buffer.expandDims(0);
     const resized = tf.image.resizeBilinear(expanded, [inputSize, inputSize]);
     const casted = tf.cast(resized, "int32");
-    //aşağıdaki kod alfa kanalını iptal ederek sadece rgb kanalını alıyor
-    //böylece pnglerin sadece renk barındıran bilgilerini alacak bir shape'e sahip oluyoruz
+    // renkli dosyaların renk ve alfa kanallarını homojen yapalım
+    // Şimdilik bunu veri toplama aşamasına atalım
     const tensor = casted.slice([0, 0, 0, 0], [1, inputSize, inputSize, 3]); // Keep only the first 3 channels
-
-    //aşağıdaki kod 3 kanallı jpg dosyalarını da 4 kanallı hale getiriyor
-    //bütün pikseller için alfa değerini 1 yapıyor
-    //böylece jpgleri pngler ile aynı shapede çıktı verecek hale getirmiş oluyoruz
-    //henüz çalıştıramadık
-    // clog(3,'tf.tensor');
-    // clog(3,tf.tensor);
-    // const tensor = tf.cond(
-    //   tf.equal(tf.tensor.shape(casted).slice(-1).squeeze(), 3),
-    //   () => tf.concat([casted, tf.onesLike(casted)], -1),
-    //   () => casted
-    // );
 
     const img = {
       fileName,
@@ -329,85 +365,6 @@ async function makePrediction(imageFile) {
   // img.dispose();
   tf.dispose(img);
 }
-
-async function PrepareJsons() {
-  clog(3, "PrepareJsons başladık");
-
-  const fs_imageFolders = tf.tidy(() => {
-    let tidy_fs_imageFolders = fs.readdirSync(imageFolder); //, (err, folders,) => {
-    return tidy_fs_imageFolders;
-  });
-  // return;
-  clog(3, "etiket klasörleri okundu:" + fs_imageFolders);
-  //clog(3,"folders");
-  //clog(3,folders);
-  let acceptLabels = ["cambazlik", "normal", "tekayak"];
-
-  for (let labelindex = 0; labelindex < fs_imageFolders.length; labelindex++) {
-    const fs_imageSubFolders = fs_imageFolders[labelindex];
-
-    if (
-      fs_imageSubFolders === ".git" ||
-      !acceptLabels.includes(fs_imageSubFolders)
-    ) {
-      continue;
-    }
-    // await fs_imageFolders.forEach(async (fs_imageSubFolders) => {
-    clog(3, "fs_imageSubFolders işleniyor:" + fs_imageSubFolders);
-    if (fs_imageSubFolders === "alakasız") {
-      throw error;
-    }
-
-    //clog(3,folder);
-    //clog(3,"imageFolder + '/' + folder");
-    //clog(3,imageFolder + "/" + folder);
-
-    const imageFiles = tf.tidy(() => {
-      let tidy_imageFiles = fs.readdirSync(
-        imageFolder + "/" + fs_imageSubFolders
-      ); //, (err, files) => {
-      return tidy_imageFiles;
-    });
-
-    clog(3, "fs_imageSubFolders altında dosyalar tespit edildi:" + imageFiles);
-    //clog(3,files);
-    for (let index = 0; index < imageFiles.length; index++) {
-      // await imageFiles.forEach(async (file) => {
-      const file = imageFiles[index];
-      clog(3, "dosya işleniyor:" + file);
-      //clog(3,file);
-      let fileExt = file.split(".")[1];
-      if (fileExt === "jpg" || fileExt === "png") {
-        clog(3, "makePrediction başlıyor " + file);
-
-        try {
-          await makePrediction(
-            imageFolder + "/" + fs_imageSubFolders + "/" + file
-          ).then((x) =>
-            clog(
-              1,
-              "makePrediction gerçekten bitti label:" + fs_imageSubFolders
-            )
-          );
-        } catch (error) {
-          throw error;
-        }
-      } else {
-        islenmeyenDosyalar.push(file);
-      }
-      //clog(3,"makePrediction bitti file:" + file);
-    }
-
-    clog(
-      1,
-      "trainin datası hazırlandı işlenmeyen dosyalar" +
-        JSON.stringify(islenmeyenDosyalar)
-    );
-    // });
-  }
-  clog(3, "PrepareJsons tamamlandı");
-}
-// });
 
 async function MergeResults() {
   clog(3, "MergeResults başladık");
