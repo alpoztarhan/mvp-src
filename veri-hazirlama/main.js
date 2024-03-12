@@ -90,9 +90,9 @@ async function PrepareJsons(model, imageFolder) {
     }
     clog(5, "");
     if (islenmeyenDosyalar.length)
-      clog(2, "işlenmeyen dosyalar : " + JSON.stringify(islenmeyenDosyalar));
+      clog(3, "işlenmeyen dosyalar : " + JSON.stringify(islenmeyenDosyalar));
   }
-  clog(3, "PrepareJsons tamamlandı");
+  clog(2, "PrepareJsons tamamlandı");
 }
 
 async function MergeResults() {
