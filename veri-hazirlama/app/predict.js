@@ -1,5 +1,4 @@
 const clog = require("./clog.js");
-const saveJson = require("./saveJson.js");
 const { processResults } = require("./fileops.js");
 const fs = require("fs");
 const tf = require("@tensorflow/tfjs-node");
@@ -34,34 +33,35 @@ async function makePrediction(model, imageFile) {
   if (!imageFile || !fs.existsSync(imageFile)) {
     process.exit();
   }
-  const img = await loadImage(imageFile, inputSize);
-
+  const imgT = await loadImage(imageFile, inputSize);
   // run actual prediction
   // const t0 = process.hrtime.bigint();
-  const pose = await model.execute(img.tensor).arraySync();
-  const t1 = process.hrtime.bigint();
+  const imgX = imgT.inputShape[1];
+  const imgY = imgT.inputShape[0];
+  const pose = await model.execute(imgT.tensor).arraySync();
 
-  // :alp: Bunu da dışarı, prepareJsons'a çıkarabilir miyiz?
-  // bunun için imgX ve imgY bir şekilde geri dönmeli
-  // process results
-  const results = await processResults(
-    pose,
-    img.inputShape[1],
-    img.inputShape[0]
-  );
-  const t2 = process.hrtime.bigint();
-  clog(3, "Process time: " + Number(t2 - t1) + "μs");
+  tf.dispose(imgT);
 
-  // :alp: Bunu dışarı, prepareJsons'a çıkaracağız
-  try {
-    await saveJson(results, img.fileName);
-  } catch (error) {
-    throw error;
-  }
+  return { pose, imgX, imgY };
+  // // :alp+: Bunu da dışarı, prepareJsons'a çıkarabilir miyiz?
+  // // bunun için imgX ve imgY bir şekilde geri dönmeli
+  // // process results
+  // const t1 = process.hrtime.bigint();
+  // const results = await processResults(pose, imgX, imgY);
+  // const t2 = process.hrtime.bigint();
+  // clog(3, "Process time: " + Number(t2 - t1) + "μs");
+
+  // return results;
+
+  // // :alp+: Bunu dışarı, prepareJsons'a çıkaracağız
+  // try {
+  //   await saveJson(results, imageFile);
+  // } catch (error) {
+  //   throw error;
+  // }
   // results.dispose();
 
   // img.dispose();
-  tf.dispose(img);
 }
 
 async function loadImage(fileName, inputSize) {
@@ -77,14 +77,14 @@ async function loadImage(fileName, inputSize) {
     // Şimdilik bunu veri toplama aşamasına atalım
     const tensor = casted.slice([0, 0, 0, 0], [1, inputSize, inputSize, 3]); // Keep only the first 3 channels
 
-    const img = {
+    const imgT = {
       fileName,
       tensor,
       inputShape: buffer?.shape,
       modelShape: tensor?.shape,
       size: buffer?.size,
     };
-    return img;
+    return imgT;
   });
   return obj;
 }

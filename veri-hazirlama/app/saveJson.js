@@ -1,6 +1,6 @@
 const clog = require("./clog.js");
 const fs = require("fs");
-const { ensure } = require("./fileops.js");
+// const { ensure } = require("./fileops.js");
 const { outDir } = require("./globals.js");
 
 async function saveJson(res, filePath) {
@@ -16,7 +16,7 @@ async function saveJson(res, filePath) {
   clog(3, "fileName");
   clog(3, fileName);
 
-  // :alp: output dizini yaratma bir kez yapılsın
+  // :alp+: output dizini yaratma bir kez yapılsın
   //   ensure(`${outDir}`);
   //   ensure(`${outDir}/${label}`);
   const jsonName = `${outDir}/${label}/${fileName}.json`;

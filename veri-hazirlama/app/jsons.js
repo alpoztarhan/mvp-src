@@ -1,8 +1,12 @@
 const clog = require("./clog.js");
 const fs = require("fs");
 const { makePrediction } = require("./predict.js");
+const { ensure } = require("./fileops.js");
+const { outDir } = require("./globals.js");
+const saveJson = require("./saveJson.js");
+const { processResults } = require("./fileops.js");
 
-// :alp: label'ları genelleyelim, "." ile başlayanları atlasın
+// :alp+: label'ları genelleyelim, "." ile başlayanları atlasın
 async function PrepareJsons(model, imgDir) {
   clog(3, "PrepareJsons başladık");
   clog(5, imgDir);
@@ -10,15 +14,15 @@ async function PrepareJsons(model, imgDir) {
 
   clog(3, "etiket klasörleri okundu:" + labelDirs);
 
-  let acceptLabels = ["cambazlik", "normal", "tekayak"];
+  // let acceptLabels = ["cambazlik", "normal", "tekayak"];
 
   ensure(outDir);
 
   for (let labelindex = 0; labelindex < labelDirs.length; labelindex++) {
-    let islenmeyenDosyalar = [];
     const labelDir = labelDirs[labelindex];
 
-    if (labelDir === ".git" || !acceptLabels.includes(labelDir)) {
+    if (labelDir.slice(0, 1) === ".") {
+      //    if (labelDir === ".git" || !acceptLabels.includes(labelDir)) {
       continue;
     }
     ensure(`${outDir}/${labelDir}`);
@@ -26,6 +30,7 @@ async function PrepareJsons(model, imgDir) {
     clog(5, "labelDir işleniyor:" + labelDir);
 
     const imageFiles = fs.readdirSync(imgDir + "/" + labelDir);
+    let islenmeyenDosyalar = [];
 
     clog(3, "labelDir altında dosyalar tespit edildi:" + imageFiles);
 
@@ -37,11 +42,21 @@ async function PrepareJsons(model, imgDir) {
       let fileExt = file.split(".")[1];
       if (fileExt === "jpg" || fileExt === "png") {
         clog(2, "makePrediction başlıyor " + file);
+        const imgFile = `${imgDir}/${labelDir}/${file}`;
 
         try {
-          await makePrediction(model, `${imgDir}/${labelDir}/${file}`).then(
-            () => clog(2, `makePrediction bitti label: ${labelDir}`)
-          );
+          const { pose, imgX, imgY } = await makePrediction(model, imgFile);
+
+          const t1 = process.hrtime.bigint();
+          const results = await processResults(pose, imgX, imgY);
+          const t2 = process.hrtime.bigint();
+          clog(3, "Process time: " + Number(t2 - t1) + "μs");
+
+          try {
+            await saveJson(results, imgFile);
+          } catch (error) {
+            throw error;
+          }
         } catch (error) {
           throw error;
         }
