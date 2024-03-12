@@ -8,9 +8,7 @@ const modelOptions = {
 
 var model;
 
-// const imageFolder = "./training_data";
 const imageFolder = "/tmp/inputs";
-
 const outputFolder = "/tmp/outputs/obj";
 const birlestirfolder = "/tmp/outputs/sum";
 
@@ -70,12 +68,7 @@ async function PrepareJsons(model, imageFolder) {
     for (let index = 0; index < imageFiles.length; index++) {
       const file = imageFiles[index];
       if (!(index % 100)) clog(5, imageFiles.length - index);
-      if (!(index % 2)) {
-        // process.stdout.cork();
-        fs.writeSync(process.stdout.fd, ".");
-        // process.stdout.uncork();
-      }
-      clog(3, "dosya işleniyor:" + file);
+      if (!(index % 2)) fs.writeSync(process.stdout.fd, ".");
 
       let fileExt = file.split(".")[1];
       if (fileExt === "jpg" || fileExt === "png") {
@@ -94,19 +87,13 @@ async function PrepareJsons(model, imageFolder) {
       } else {
         islenmeyenDosyalar.push(file);
       }
-      //clog(3,"makePrediction bitti file:" + file);
     }
-
-    clog(
-      2,
-      "training datası hazırlandı işlenmeyen dosyalar" +
-        JSON.stringify(islenmeyenDosyalar)
-    );
-    // });
+    clog(5, "");
+    if (islenmeyenDosyalar.length)
+      clog(2, "işlenmeyen dosyalar : " + JSON.stringify(islenmeyenDosyalar));
   }
   clog(3, "PrepareJsons tamamlandı");
 }
-// });
 
 async function MergeResults() {
   clog(3, "MergeResults başladık");
@@ -135,20 +122,16 @@ async function MergeResults() {
   return;
 }
 
-async function SaveSum(birlestirfolder) {
-  clog(3, "SaveSum başladık");
-
+async function SaveSum(folder) {
   try {
-    fs.mkdirSync(birlestirfolder);
+    fs.mkdirSync(folder);
   } catch (error) {
-    clog(3, birlestirfolder + "  klasörü yaratmada hata:");
-    clog(3, error);
+    clog(3, folder + "  klasörü yaratmada hata:" + error);
     throw error;
   }
 
-  clog(3, "tidy başlayacak");
   fs.writeFileSync(
-    birlestirfolder + "/" + "sumdata.json",
+    folder + "/" + "sumdata.json",
     JSON.stringify(TRAINING_DATA),
     (err) => {
       if (err) {
@@ -159,7 +142,6 @@ async function SaveSum(birlestirfolder) {
       }
     }
   );
-  clog(3, "tidy bitti");
 }
 
 Main();
