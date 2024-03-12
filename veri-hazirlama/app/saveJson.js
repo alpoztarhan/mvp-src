@@ -1,5 +1,7 @@
 const clog = require("./clog.js");
 const fs = require("fs");
+const { ensure } = require("./fileops.js");
+const { outDir } = require("./globals.js");
 
 async function saveJson(res, filePath) {
   clog(3, "saveJson başvuru geldi");
@@ -8,44 +10,19 @@ async function saveJson(res, filePath) {
   let label = filePath.split("/")[3];
   clog(3, "label tespit edildi:" + label);
 
-  let fileNameExt = filePath.split("/")[4];
-  let fileName = fileNameExt.split(".")[0];
+  let basename = filePath.split("/")[4];
+  let fileName = basename.split(".")[0];
 
   clog(3, "fileName");
   clog(3, fileName);
 
-  try {
-    if (!fs.existsSync("/tmp/outputs/obj")) {
-      clog(3, "/tmp/outputs/obj klasörü yaratılacak:");
-      fs.mkdirSync("/tmp/outputs/obj/");
-      clog(3, "/tmp/outputs/obj klasörü yaratıldı");
-    }
-  } catch (error) {
-    clog(3, "/tmp/outputs/obj klasörü yaratmada hata");
-    clog(3, error);
-  }
+  // :alp: output dizini yaratma bir kez yapılsın
+  //   ensure(`${outDir}`);
+  //   ensure(`${outDir}/${label}`);
+  const jsonName = `${outDir}/${label}/${fileName}.json`;
+  clog(3, `${jsonName} dosyası yaratılacak`);
 
-  try {
-    if (!fs.existsSync("/tmp/outputs/obj/" + label)) {
-      clog(3, "label klasörü yaratılacak:" + label);
-      clog(3, "/tmp/outputs/obj/" + label);
-      fs.mkdirSync("/tmp/outputs/obj/" + label);
-    }
-  } catch (err) {
-    console.error("label klasörü yaratmada hata err:");
-    console.error(err);
-    throw err;
-  }
-
-  clog(
-    3,
-    "/tmp/outputs/obj/" + label + "/" + fileName + ".json dosyası yaratılacak"
-  );
-
-  fs.writeFileSync(
-    "/tmp/outputs/obj/" + label + "/" + fileName + ".json",
-    JSON.stringify(res)
-  );
+  fs.writeFileSync(jsonName, JSON.stringify(res));
 
   clog(3, "fs.writeFile tamamlandı");
 }

@@ -1,26 +1,8 @@
 const clog = require("./clog.js");
 const saveJson = require("./saveJson.js");
+const { processResults } = require("./fileops.js");
 const fs = require("fs");
 const tf = require("@tensorflow/tfjs-node");
-const bodyParts = [
-  "nose",
-  "leftEye",
-  "rightEye",
-  "leftEar",
-  "rightEar",
-  "leftShoulder",
-  "rightShoulder",
-  "leftElbow",
-  "rightElbow",
-  "leftWrist",
-  "rightWrist",
-  "leftHip",
-  "rightHip",
-  "leftKnee",
-  "rightKnee",
-  "leftAnkle",
-  "rightAnkle",
-];
 
 async function loadTFModel(modelOptions) {
   // init tensorflow
@@ -44,26 +26,6 @@ async function loadTFModel(modelOptions) {
   return model;
 }
 
-async function processResults(pose, img) {
-  // const data = res.arraySync();
-  // res.dispose();
-  const kpt = pose[0][0];
-  const parts = [];
-  for (let i = 0; i < kpt.length; i++) {
-    const part = {
-      id: i,
-      label: bodyParts[i],
-      score: kpt[i][2],
-      xRaw: kpt[i][0],
-      yRaw: kpt[i][1],
-      x: Math.trunc(kpt[i][1] * img.inputShape[1]),
-      y: Math.trunc(kpt[i][0] * img.inputShape[0]),
-    };
-    parts.push(part);
-  }
-  return parts;
-}
-
 async function makePrediction(model, imageFile) {
   let inputSize = Object.values(model.modelSignature["inputs"])[0].tensorShape
     .dim[2].size;
@@ -79,12 +41,18 @@ async function makePrediction(model, imageFile) {
   const pose = await model.execute(img.tensor).arraySync();
   const t1 = process.hrtime.bigint();
 
+  // :alp: Bunu da dışarı, prepareJsons'a çıkarabilir miyiz?
+  // bunun için imgX ve imgY bir şekilde geri dönmeli
   // process results
-  const results = await processResults(pose, img);
+  const results = await processResults(
+    pose,
+    img.inputShape[1],
+    img.inputShape[0]
+  );
   const t2 = process.hrtime.bigint();
   clog(3, "Process time: " + Number(t2 - t1) + "μs");
 
-  // Bunu dışarı, prepareJsons'a çıkaracağız
+  // :alp: Bunu dışarı, prepareJsons'a çıkaracağız
   try {
     await saveJson(results, img.fileName);
   } catch (error) {

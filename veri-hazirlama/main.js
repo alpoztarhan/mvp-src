@@ -10,28 +10,25 @@ const { MergeResults, SaveSum } = require("./app/fileops.js");
 
 var model;
 
-const imageFolder = "/tmp/inputs";
-const outputFolder = "/tmp/outputs/obj";
-const birlestirfolder = "/tmp/outputs/sum";
-
+const { imgDir, outDir, sumDir } = require("./app/globals.js");
 const clog = require("./app/clog.js");
 
 async function Main() {
   model = await loadTFModel(modelOptions);
   clog(5, "Model loaded");
   try {
-    await PrepareJsons(model, imageFolder);
+    await PrepareJsons(model, imgDir);
     clog(5, "PrepareJsons bitti");
   } catch (error) {
     clog(5, "PrepareJsons hata");
     throw error;
   }
 
-  await MergeResults(outputFolder);
+  await MergeResults(outDir);
   clog(5, "MergeResults bitti");
 
   try {
-    await SaveSum(birlestirfolder);
+    await SaveSum(sumDir);
   } catch (error) {
     clog(5, "SaveSum hata");
     throw error;

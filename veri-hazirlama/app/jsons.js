@@ -2,14 +2,17 @@ const clog = require("./clog.js");
 const fs = require("fs");
 const { makePrediction } = require("./predict.js");
 
-async function PrepareJsons(model, imageFolder) {
+// :alp: label'ları genelleyelim, "." ile başlayanları atlasın
+async function PrepareJsons(model, imgDir) {
   clog(3, "PrepareJsons başladık");
-  clog(5, imageFolder);
-  const labelDirs = fs.readdirSync(imageFolder);
+  clog(5, imgDir);
+  const labelDirs = fs.readdirSync(imgDir);
 
   clog(3, "etiket klasörleri okundu:" + labelDirs);
 
   let acceptLabels = ["cambazlik", "normal", "tekayak"];
+
+  ensure(outDir);
 
   for (let labelindex = 0; labelindex < labelDirs.length; labelindex++) {
     let islenmeyenDosyalar = [];
@@ -18,10 +21,11 @@ async function PrepareJsons(model, imageFolder) {
     if (labelDir === ".git" || !acceptLabels.includes(labelDir)) {
       continue;
     }
+    ensure(`${outDir}/${labelDir}`);
 
     clog(5, "labelDir işleniyor:" + labelDir);
 
-    const imageFiles = fs.readdirSync(imageFolder + "/" + labelDir);
+    const imageFiles = fs.readdirSync(imgDir + "/" + labelDir);
 
     clog(3, "labelDir altında dosyalar tespit edildi:" + imageFiles);
 
@@ -35,10 +39,9 @@ async function PrepareJsons(model, imageFolder) {
         clog(2, "makePrediction başlıyor " + file);
 
         try {
-          await makePrediction(
-            model,
-            `${imageFolder}/${labelDir}/${file}`
-          ).then(() => clog(2, `makePrediction bitti label: ${labelDir}`));
+          await makePrediction(model, `${imgDir}/${labelDir}/${file}`).then(
+            () => clog(2, `makePrediction bitti label: ${labelDir}`)
+          );
         } catch (error) {
           throw error;
         }
