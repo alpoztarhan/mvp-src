@@ -1,12 +1,11 @@
 const clog = require("./clog.js");
 const fs = require("fs");
-const { makePrediction } = require("./predict.js");
+const { findBodyScan } = require("./predict.js");
 const { ensure } = require("./fileops.js");
 const { outDir } = require("./globals.js");
 const saveJson = require("./saveJson.js");
-const { processResults } = require("./fileops.js");
+const { bodyScan } = require("./fileops.js");
 
-// :alp+: label'ları genelleyelim, "." ile başlayanları atlasın
 async function PrepareJsons(model, imgDir) {
   clog(3, "PrepareJsons başladık");
   clog(5, imgDir);
@@ -14,17 +13,12 @@ async function PrepareJsons(model, imgDir) {
 
   clog(3, "etiket klasörleri okundu:" + labelDirs);
 
-  // let acceptLabels = ["cambazlik", "normal", "tekayak"];
-
   ensure(outDir);
 
   for (let labelindex = 0; labelindex < labelDirs.length; labelindex++) {
     const labelDir = labelDirs[labelindex];
 
-    if (labelDir.slice(0, 1) === ".") {
-      //    if (labelDir === ".git" || !acceptLabels.includes(labelDir)) {
-      continue;
-    }
+    if (["alakasiz", ".git"].includes(labelDir)) continue;
     ensure(`${outDir}/${labelDir}`);
 
     clog(5, "labelDir işleniyor:" + labelDir);
@@ -41,22 +35,18 @@ async function PrepareJsons(model, imgDir) {
 
       let fileExt = file.split(".")[1];
       if (fileExt === "jpg" || fileExt === "png") {
-        clog(2, "makePrediction başlıyor " + file);
-        const imgFile = `${imgDir}/${labelDir}/${file}`;
+        clog(2, "findBodyScan başlıyor " + file);
+        const imgPath = `${imgDir}/${labelDir}/${file}`;
 
         try {
-          const { pose, imgX, imgY } = await makePrediction(model, imgFile);
+          const { pose, imgX, imgY } = await findBodyScan(model, imgPath);
 
           const t1 = process.hrtime.bigint();
-          const results = await processResults(pose, imgX, imgY);
+          const results = await bodyScan(pose, imgX, imgY);
           const t2 = process.hrtime.bigint();
           clog(3, "Process time: " + Number(t2 - t1) + "μs");
 
-          try {
-            await saveJson(results, imgFile);
-          } catch (error) {
-            throw error;
-          }
+          await saveJson(results, imgPath);
         } catch (error) {
           throw error;
         }
@@ -65,10 +55,7 @@ async function PrepareJsons(model, imgDir) {
       }
     }
     clog(5, "");
-    if (islenmeyenDosyalar.length)
-      clog(3, "işlenmeyen dosyalar : " + JSON.stringify(islenmeyenDosyalar));
   }
-  clog(2, "PrepareJsons tamamlandı");
 }
 
 module.exports = { PrepareJsons };

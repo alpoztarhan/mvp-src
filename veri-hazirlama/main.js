@@ -1,7 +1,7 @@
 const fs = require("fs");
 const process = require("process");
 const canvas = require("canvas");
-const { loadTFModel, makePrediction, loadImage } = require("./app/predict.js");
+const { loadTFModel } = require("./app/predict.js");
 const modelOptions = {
   modelPath: "file://models/movenet/singlepose-thunder/model.json",
 };
@@ -36,6 +36,3 @@ async function Main() {
 }
 
 Main();
-// .then(() => {
-//   clog(3, "İşlem bitti..");
-// });

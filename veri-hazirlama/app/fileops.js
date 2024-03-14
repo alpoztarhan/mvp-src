@@ -36,7 +36,7 @@ function ensure(path, label = path, verbosity = 3, bozul = true) {
   }
 }
 
-async function processResults(pose, imgX, imgY) {
+async function bodyScan(pose, imgWidth, imgHeight) {
   // const data = res.arraySync();
   // res.dispose();
   const kpt = pose[0][0];
@@ -48,8 +48,8 @@ async function processResults(pose, imgX, imgY) {
       score: kpt[i][2],
       xRaw: kpt[i][0],
       yRaw: kpt[i][1],
-      x: Math.trunc(kpt[i][1] * imgX),
-      y: Math.trunc(kpt[i][0] * imgY),
+      x: Math.trunc(kpt[i][1] * imgWidth),
+      y: Math.trunc(kpt[i][0] * imgHeight),
     };
     parts.push(part);
   }
@@ -59,18 +59,16 @@ async function processResults(pose, imgX, imgY) {
 async function MergeResults(outputFolder) {
   clog(3, "MergeResults başladık");
 
-  // ensure(outputFolder);
-
   const labelDirs = fs.readdirSync(outputFolder);
 
-  labelDirs.forEach((folder) => {
-    const jsonFiles = fs.readdirSync(`${outputFolder}/${folder}`);
+  labelDirs.forEach((label) => {
+    const jsonFiles = fs.readdirSync(`${outputFolder}/${label}`);
 
     jsonFiles.forEach((file) => {
-      const data = fs.readFileSync(`${outputFolder}/${folder}/${file}`, "utf8");
-      var mInput = JSON.parse(data);
-      TRAINING_DATA.inputs.push(mInput);
-      TRAINING_DATA.outputs.push(folder);
+      const data = fs.readFileSync(`${outputFolder}/${label}/${file}`, "utf8");
+      const pose = JSON.parse(data);
+      TRAINING_DATA.inputs.push(pose);
+      TRAINING_DATA.outputs.push(label);
     });
   });
   return;
@@ -90,4 +88,4 @@ async function SaveSum(folder) {
   });
 }
 
-module.exports = { MergeResults, SaveSum, processResults, ensure };
+module.exports = { MergeResults, SaveSum, bodyScan, ensure };

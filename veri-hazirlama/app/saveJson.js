@@ -13,18 +13,11 @@ async function saveJson(res, filePath) {
   let basename = filePath.split("/")[4];
   let fileName = basename.split(".")[0];
 
-  clog(3, "fileName");
-  clog(3, fileName);
-
   // :alp+: output dizini yaratma bir kez yapılsın
-  //   ensure(`${outDir}`);
-  //   ensure(`${outDir}/${label}`);
   const jsonName = `${outDir}/${label}/${fileName}.json`;
   clog(3, `${jsonName} dosyası yaratılacak`);
 
   fs.writeFileSync(jsonName, JSON.stringify(res));
-
-  clog(3, "fs.writeFile tamamlandı");
 }
 
 module.exports = saveJson;
