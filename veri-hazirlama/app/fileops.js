@@ -37,23 +37,17 @@ function ensure(path, verbosity = 5, label = path, bozul = true) {
 }
 
 function objectifyScan(scan) {
-  // const data = res.arraySync();
-  // res.dispose();
-  const kpt = scan.pose[0][0];
-  const parts = [];
-  for (let i = 0; i < kpt.length; i++) {
-    const part = {
+  return scan.pose[0][0].map((kpti, i) => {
+    return {
       id: i,
       label: bodyParts[i],
-      score: kpt[i][2],
-      xRaw: kpt[i][0],
-      yRaw: kpt[i][1],
-      x: Math.trunc(kpt[i][1] * scan.imgWidth),
-      y: Math.trunc(kpt[i][0] * scan.imgHeight),
+      score: kpti[2],
+      xRaw: kpti[1],
+      yRaw: kpti[0],
+      x: Math.trunc(kpti[1] * scan.imgWidth),
+      y: Math.trunc(kpti[0] * scan.imgHeight),
     };
-    parts.push(part);
-  }
-  return parts;
+  });
 }
 
 function MergeResults(objDir) {
