@@ -1,6 +1,11 @@
 const clog = require("./clog.js");
 const fs = require("fs");
 const tf = require("@tensorflow/tfjs-node");
+// :alp: Aşağıdaki 4 satırdan kurtul
+let inputSize = 256;
+let movenet;
+let findBodyScan;
+let modelBodyScan;
 
 async function loadTFModel(modelOptions) {
   // init tensorflow
@@ -11,32 +16,50 @@ async function loadTFModel(modelOptions) {
   await tf.ENV.set("DEBUG", false);
   await tf.ready();
   //local olmayan alternatifi de olsun
-  const model = tf.loadGraphModel(modelOptions.modelPath);
-  return model;
+  movenet = await tf.loadGraphModel(modelOptions.modelPath);
+
+  modelBodyScan = curryBodyScan(movenet);
+
+  return movenet;
 }
 
-async function findBodyScan(model, imageFile) {
-  let inputSize = Object.values(model.modelSignature["inputs"])[0].tensorShape
+async function initTF(modelOptions) {
+  let movenet = await loadTFModel(modelOptions);
+  // console.log("movenet:" + movenet + ">>\n>>");
+  // console.log(
+  //   Object.values(movenet.modelSignature["inputs"])[0].tensorShape.dim[2].size
+  // );
+  let inputSize = Object.values(movenet.modelSignature["inputs"])[0].tensorShape
     .dim[2].size;
-  if (inputSize === -1) inputSize = 256;
+  if (inputSize == -1) inputSize = 256;
+  // console.log(`inputsize:${inputSize}`);
+  // console.log("modelBodyScan");
+  // console.log(modelBodyScan);
+  findBodyScan = modelBodyScan(inputSize); // == -1 ? 256 : inputSize);
+  // console.log("findBodyScan.predict[38]");
+  // console.log(findBodyScan);
+  return findBodyScan;
+}
 
-  // :alp: dosya ne durumlarda olmayabilir? bu kontrol gerekli mi?
-  if (!imageFile || !fs.existsSync(imageFile)) {
-    process.exit();
-  }
-  const imgT = await loadImage(imageFile, inputSize);
-  // run actual prediction
-  // const t0 = process.hrtime.bigint();
-  const imgX = imgT.inputShape[1];
-  const imgY = imgT.inputShape[0];
-  const pose = await model.execute(imgT.tensor).arraySync();
-
-  tf.dispose(imgT);
-
-  return { pose, imgX, imgY };
+function curryBodyScan(movenet) {
+  return (inputSize) => {
+    return async (imageFile) => {
+      const imgT = await loadImage(imageFile, inputSize);
+      // console.log(`inputSize:${inputSize}`);
+      // run actual prediction
+      // const t0 = process.hrtime.bigint();
+      const imgWidth = imgT.inputShape[1];
+      const imgHeight = imgT.inputShape[0];
+      const poseT = await movenet.execute(imgT.tensor);
+      const pose = poseT.arraySync();
+      tf.dispose(imgT);
+      return { pose, imgWidth, imgHeight };
+    };
+  };
 }
 
 async function loadImage(fileName, inputSize) {
+  if (inputSize === -1) inputSize = 256;
   const data = fs.readFileSync(fileName);
   const obj = tf.tidy(() => {
     const buffer = tf.node.decodeImage(data);
@@ -50,11 +73,11 @@ async function loadImage(fileName, inputSize) {
     const tensor = casted.slice([0, 0, 0, 0], [1, inputSize, inputSize, 3]); // Keep only the first 3 channels
 
     const imgT = {
-      fileName,
+      // fileName,
       tensor,
       inputShape: buffer?.shape,
-      modelShape: tensor?.shape,
-      size: buffer?.size,
+      // modelShape: tensor?.shape,
+      // size: buffer?.size,
     };
     return imgT;
   });
@@ -62,6 +85,7 @@ async function loadImage(fileName, inputSize) {
 }
 
 module.exports = {
-  loadTFModel,
+  initTF,
+  // loadTFModel,
   findBodyScan,
 };

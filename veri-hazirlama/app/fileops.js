@@ -1,9 +1,5 @@
 const fs = require("fs");
 const clog = require("./clog.js");
-let TRAINING_DATA = {
-  inputs: [],
-  outputs: [],
-};
 const bodyParts = [
   "nose",
   "leftEye",
@@ -24,10 +20,14 @@ const bodyParts = [
   "rightAnkle",
 ];
 
-function ensure(path, label = path, verbosity = 3, bozul = true) {
+function ensure(path, verbosity = 5, label = path, bozul = true) {
+  console.log("ensure path =", path);
   try {
-    if (!fs.existsSync(path)) {
+    if (fs.existsSync(path)) {
+      clog(verbosity, `${label} klasörü var.`);
+    } else {
       clog(verbosity, `${label} klasörü yaratılacak:`);
+      fs.mkdirSync(path);
     }
   } catch (error) {
     clog(verbosity, `${label} klasörü yaratılamadı.`);
@@ -36,10 +36,10 @@ function ensure(path, label = path, verbosity = 3, bozul = true) {
   }
 }
 
-async function bodyScan(pose, imgWidth, imgHeight) {
+function objectifyScan(scan) {
   // const data = res.arraySync();
   // res.dispose();
-  const kpt = pose[0][0];
+  const kpt = scan.pose[0][0];
   const parts = [];
   for (let i = 0; i < kpt.length; i++) {
     const part = {
@@ -48,44 +48,60 @@ async function bodyScan(pose, imgWidth, imgHeight) {
       score: kpt[i][2],
       xRaw: kpt[i][0],
       yRaw: kpt[i][1],
-      x: Math.trunc(kpt[i][1] * imgWidth),
-      y: Math.trunc(kpt[i][0] * imgHeight),
+      x: Math.trunc(kpt[i][1] * scan.imgWidth),
+      y: Math.trunc(kpt[i][0] * scan.imgHeight),
     };
     parts.push(part);
   }
   return parts;
 }
 
-async function MergeResults(outputFolder) {
+function MergeResults(objDir) {
+  let TRAINING_DATA = {
+    inputs: [],
+    outputs: [],
+  };
   clog(3, "MergeResults başladık");
 
-  const labelDirs = fs.readdirSync(outputFolder);
+  const labelDirs = fs.readdirSync(objDir);
 
   labelDirs.forEach((label) => {
-    const jsonFiles = fs.readdirSync(`${outputFolder}/${label}`);
+    const jsonFiles = fs.readdirSync(`${objDir}/${label}`);
 
     jsonFiles.forEach((file) => {
-      const data = fs.readFileSync(`${outputFolder}/${label}/${file}`, "utf8");
+      const data = fs.readFileSync(`${objDir}/${label}/${file}`, "utf8");
       const pose = JSON.parse(data);
       TRAINING_DATA.inputs.push(pose);
       TRAINING_DATA.outputs.push(label);
     });
   });
-  return;
+  return TRAINING_DATA;
 }
 
-async function SaveSum(folder) {
-  ensure(folder);
-  const sumFile = `${folder}/sumdata.json`;
+function SaveSum(DATA, sumDir) {
+  ensure(sumDir);
   // if (fs.existsSync(sumFile))
-  fs.writeFileSync(sumFile, JSON.stringify(TRAINING_DATA), (err) => {
-    if (err) {
-      clog(3, "sum writeFile err");
-      clog(3, err);
-    } else {
-      clog(3, "sum yazıldı");
-    }
-  });
+  fs.writeFileSync(
+    `${sumDir}/sumdata.json`,
+    JSON.stringify(DATA, null, 2) + "\n"
+  );
 }
 
-module.exports = { MergeResults, SaveSum, bodyScan, ensure };
+const { outDir } = require("./globals.js");
+
+async function saveJson(res, filePath) {
+  // /tmp/inputs/alakasiz/Image_78 (5).jpg
+  let label = filePath.split("/")[3];
+  clog(3, "label tespit edildi:" + label);
+
+  let basename = filePath.split("/")[4];
+  let fileName = basename.split(".")[0];
+
+  // :alp+: output dizini yaratma bir kez yapılsın
+  const jsonName = `${outDir}/${label}/${fileName}.json`;
+  clog(3, `${jsonName} dosyası yaratılacak`);
+
+  fs.writeFileSync(jsonName, JSON.stringify(res, null, 2));
+}
+
+module.exports = { MergeResults, SaveSum, objectifyScan, ensure, saveJson };
