@@ -98,4 +98,12 @@ async function saveJson(res, filePath) {
   fs.writeFileSync(jsonName, JSON.stringify(res, null, 2));
 }
 
+async function save2Json(res, label, fileName) {
+  let newName = fileName.split(".")[0];
+
+  const jsonName = `${outDir}/${label}/${newName}.json2`;
+
+  fs.writeFileSync(jsonName, JSON.stringify(res, null, 2));
+}
+
 module.exports = { MergeResults, SaveSum, objectifyScan, ensure, saveJson };
