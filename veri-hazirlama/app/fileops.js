@@ -83,7 +83,7 @@ function SaveSum(DATA, sumDir) {
 
 const { outDir } = require("./globals.js");
 
-async function saveJson(res, filePath) {
+async function save1Json(res, filePath) {
   // /tmp/inputs/alakasiz/Image_78 (5).jpg
   let label = filePath.split("/")[3];
   clog(3, "label tespit edildi:" + label);
@@ -98,12 +98,19 @@ async function saveJson(res, filePath) {
   fs.writeFileSync(jsonName, JSON.stringify(res, null, 2));
 }
 
-async function save2Json(res, label, fileName) {
+async function saveJson(res, label, fileName) {
   let newName = fileName.split(".")[0];
-
-  const jsonName = `${outDir}/${label}/${newName}.json2`;
+  const jsonName = `${outDir}/${label}/${newName}.json`;
+  // console.log(jsonName, " => ", res);
 
   fs.writeFileSync(jsonName, JSON.stringify(res, null, 2));
 }
 
-module.exports = { MergeResults, SaveSum, objectifyScan, ensure, saveJson };
+module.exports = {
+  MergeResults,
+  SaveSum,
+  objectifyScan,
+  ensure,
+  saveJson,
+  save1Json,
+};

@@ -6,7 +6,7 @@ const modelOptions = {
   modelPath: "file://models/movenet/singlepose-thunder/model.json",
 };
 const { curryJsons } = require("./app/jsons.js");
-const { MergeResults, SaveSum } = require("./app/fileops.js");
+const { MergeResults, SaveSum, ensure } = require("./app/fileops.js");
 
 const { imgDir, outDir, sumDir } = require("./app/globals.js");
 const clog = require("./app/clog.js");
@@ -14,16 +14,15 @@ const clog = require("./app/clog.js");
 async function Main() {
   const findBodyScan = await initTF(modelOptions);
   clog(5, "movenet loaded");
-  try {
-    await curryJsons(findBodyScan)(imgDir);
-    clog(5, "PrepareJsons bitti");
-  } catch (error) {
-    clog(5, "PrepareJsons hata");
-    throw error;
-  }
+  const data = await curryJsons(findBodyScan)(imgDir);
+  ensure(sumDir);
+  fs.writeFileSync(
+    `${sumDir}/sumdata2.json`,
+    JSON.stringify(data, null, 2) + "\n"
+  );
 
-  SaveSum(MergeResults(outDir), sumDir);
-  clog(5, "MergeResults saved..");
+  // SaveSum(MergeResults(outDir), sumDir);
+  // clog(5, "MergeResults saved..");
 }
 
 Main();
