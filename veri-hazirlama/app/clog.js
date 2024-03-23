@@ -1,9 +1,8 @@
-function clog(level, msg, clabel) {
+function clog(msg, level = 5, clabel) {
   if (level > 3) {
     if (clabel) console.log(clabel);
     console.log(msg);
-    // console.log(Date.now());
   }
 }
 
-module.exports = clog;
+module.exports = { clog };
