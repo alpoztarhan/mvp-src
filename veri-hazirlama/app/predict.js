@@ -4,11 +4,6 @@ const tf = require("@tensorflow/tfjs-node");
 const modelOptions = {
   modelPath: "file://models/movenet/singlepose-thunder/model.json",
 };
-// :alp: Aşağıdaki 4 satırdan kurtul
-// let inputSize = 256;
-// let movenet;
-// let findBodyScan;
-// let modelBodyScan;
 
 async function loadTFModel(modelOptions) {
   // init tensorflow
@@ -31,6 +26,7 @@ async function initTF() {
   return curryBodyScan(movenet)(inputSize);
 }
 
+// curryBodyScan(movenet)(inputSize)(imageFile)
 function curryBodyScan(movenet) {
   return (inputSize) => {
     return async (imageFile) => {
