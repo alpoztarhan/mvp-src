@@ -3,8 +3,6 @@ console.log("main.js başladı");
 const fs = require("fs");
 const tf = require("@tensorflow/tfjs-node");
 
-
-
 // var counter = 0;
 
 // function dakikaSayac() {
@@ -26,7 +24,6 @@ const tf = require("@tensorflow/tfjs-node");
 // } catch (error) {
 //   console.log(JSON.stringify(error));
 // }
-
 
 /*
 layer objesi init için kullanılabilecek parametreler
@@ -59,9 +56,9 @@ var myconfig = {
   eskiDosyaPath: "file:///tmp/outputs/models/canavar/model.json",
   // trainingDataPath: "./trainingdata/fashion-mnist/fashion-mnist2.js",
   dataFromOjectArray: "/tmp/inputs/sum/sumdata.json",
-  modelSavePath: '/tmp/outputs/models/',
-  modelSaveProtocol: 'file:///',
-  modelSaveName: 'canavar',
+  modelSavePath: "/tmp/outputs/models/",
+  modelSaveProtocol: "file:///",
+  modelSaveName: "canavar",
   labelDictionary: [],
   modelMimarisi: "sequential",
   runShuffleCombo: true,
@@ -90,7 +87,7 @@ var myconfig = {
   },
   outputFeature: {
     name: "oneHot",
-    importLastLayerUnitCountFromTrainingData: true
+    importLastLayerUnitCountFromTrainingData: true,
   },
 
   train: {
@@ -102,8 +99,8 @@ var myconfig = {
     fit: {
       shuffle: true,
       validationSplit: 0.3,
-      batchSize: 64,
-      epochs: 5,
+      batchSize: 512,
+      epochs: 50,
     },
   },
 };
@@ -161,10 +158,7 @@ function collectDataFromObjectArray(configobjesi) {
     TRAINING_DATA.inputs.push(poseArray);
 
     const label = dataObjectArray.outputs[index];
-
     const found = labelDictionary.find((x) => x === label);
-
-
     if (found !== undefined) {
       TRAINING_DATA.outputs.push(found);
     } else {
@@ -188,7 +182,6 @@ async function getTrainingData(configobjesi) {
 }
 
 async function getModel(configobjesi) {
-
   if (configobjesi.yenimodel) {
     //hazır yüklenen yok ise
     //configden gelen mimari bilgisine göre yeni model init et
@@ -202,59 +195,69 @@ async function getModel(configobjesi) {
 async function setModel(configobjesi, model) {
   //önce zaman damgası ile kaydedelim
   let mDate = new Date().toISOString();
-  let folderName = mDate.replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-  const arrayString = JSON.stringify(configobjesi.labelDictionary.map((value, index) => ({ [index + 1]: value })));
-  console.log('model kaydı için kullanılacak path');
-  console.log(configobjesi.modelSaveProtocol + configobjesi.modelSavePath + folderName);
-  await model.save(configobjesi.modelSaveProtocol
-    + configobjesi.modelSavePath
-    + folderName);
+  let folderName = mDate.replace(/-/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+  const arrayString = JSON.stringify(
+    configobjesi.labelDictionary.map((value, index) => ({ [index + 1]: value }))
+  );
+  console.log("model kaydı için kullanılacak path");
+  console.log(
+    configobjesi.modelSaveProtocol + configobjesi.modelSavePath + folderName
+  );
+  await model.save(
+    configobjesi.modelSaveProtocol + configobjesi.modelSavePath + folderName
+  );
 
   try {
     if (!fs.existsSync(configobjesi.modelSavePath + folderName)) {
-      console.log('modelSavePath klasörü yaratılacak:' + configobjesi.modelSavePath + folderName);
+      console.log(
+        "modelSavePath klasörü yaratılacak:" +
+          configobjesi.modelSavePath +
+          folderName
+      );
       fs.mkdirSync(configobjesi.modelSavePath + folderName);
     }
   } catch (err) {
-    console.error('modelSavePath klasörü yaratmada hata err:');
+    console.error("modelSavePath klasörü yaratmada hata err:");
     console.error(err);
     throw err;
   }
 
-
-
-
-  console.log('etiketler yazılacak');
-  console.log(configobjesi.modelSavePath + folderName + "/" + "labels" + ".json");
+  console.log("etiketler yazılacak");
+  console.log(
+    configobjesi.modelSavePath + folderName + "/" + "labels" + ".json"
+  );
   fs.writeFileSync(
     configobjesi.modelSavePath + folderName + "/" + "labels" + ".json",
     arrayString
   );
 
-
   //sonra isim ile kaydedelim
-  await model.save(configobjesi.modelSaveProtocol
-    + configobjesi.modelSavePath
-    + configobjesi.modelSaveName);
+  await model.save(
+    configobjesi.modelSaveProtocol +
+      configobjesi.modelSavePath +
+      configobjesi.modelSaveName
+  );
   fs.writeFileSync(
-    configobjesi.modelSavePath + configobjesi.modelSaveName + "/" + "labels" + ".json",
+    configobjesi.modelSavePath +
+      configobjesi.modelSaveName +
+      "/" +
+      "labels" +
+      ".json",
     arrayString
   );
-
 }
 
 async function setLayers(configobjesi, model) {
   if (configobjesi.runSetLayers) {
-    configobjesi.layers[configobjesi.layers.length - 1].units = configobjesi.labelDictionary.length;
+    configobjesi.layers[configobjesi.layers.length - 1].units =
+      configobjesi.labelDictionary.length;
     //layers ile model.add çağrılarını kullanarak modele layer ekleyebiliriz
     //eski veya yani model olması faketmez
-    configobjesi.layers.forEach((element) => model.add(tf.layers.dense(element)));
+    configobjesi.layers.forEach((element) =>
+      model.add(tf.layers.dense(element))
+    );
   }
-
-
 }
-
-
 
 function logProgress(epoch, logs) {
   console.log("Data for epoch " + epoch, logs);
@@ -339,7 +342,6 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
           tf.tensor1d(INPUTS[OFFSET]),
           configobjesi.normalizasyon.params.min,
           configobjesi.normalizasyon.params.max
-
         );
         break;
 
@@ -351,13 +353,13 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
     // console.log('evaluate içinde predict için newInput');
     // console.log(newInput);
     // console.log('/newInput');
-    console.log('newinputa denk gelen indexteki output');
+    console.log("newinputa denk gelen indexteki output");
     console.log(OUTPUTS[OFFSET]);
     let output = model.predict(newInput.expandDims());
-    console.log('predict tamamlandı output.print:');
+    console.log("predict tamamlandı output.print:");
 
     output.print();
-    console.log('/output.print');
+    console.log("/output.print");
 
     return output.squeeze().argMax();
   });
@@ -367,17 +369,16 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
   // console.log('/answer');
 
   answer.array().then(function (index) {
-    console.log('index');
+    console.log("index");
     console.log(index);
-    console.log('LOOKUP[index]');
+    console.log("LOOKUP[index]");
     console.log(LOOKUP[index]);
-    console.log('OUTPUTS[OFFSET]');
+    console.log("OUTPUTS[OFFSET]");
     console.log(OUTPUTS[OFFSET]);
     if (LOOKUP[index] === OUTPUTS[OFFSET]) {
-      console.log('tahmin doğru');
+      console.log("tahmin doğru");
     } else {
-      console.log('tahmin yanlış');
-
+      console.log("tahmin yanlış");
     }
     answer.dispose();
     drawImage(INPUTS[OFFSET]);
@@ -390,7 +391,6 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
 }
 
 async function main(configobjesi) {
-
   const TRAINING_DATA = await getTrainingData(configobjesi);
 
   //Training objesi içerisinden bunları parçalıyoruz heralde obje büyük olduğu için
@@ -429,8 +429,7 @@ async function main(configobjesi) {
   });
 
   // Convert text labels to numeric indices
-  const numericOutputs = OUTPUTS.map(label => labelToIndex[label]);
-
+  const numericOutputs = OUTPUTS.map((label) => labelToIndex[label]);
 
   //iman demişken çıktının da 1 boyutlu olacağına iman ediyoruz...
   const OUTPUTS_TENSOR = tf[configobjesi.outputFeature.name](
@@ -438,19 +437,18 @@ async function main(configobjesi) {
     configobjesi.labelDictionary.length
   );
 
-  console.log('OUTPUTS_TENSOR');
+  console.log("OUTPUTS_TENSOR");
   console.log(OUTPUTS_TENSOR);
-  console.log('train başlıyor');
+  console.log("train başlıyor");
   await train(model, configobjesi, INPUTS_TENSOR, OUTPUTS_TENSOR);
 
   //console.log('train bitti');
 
   if (configobjesi.saveModel) {
-    console.log('setModel');
+    console.log("setModel");
     await setModel(configobjesi, model);
-    console.log('/setModel');
+    console.log("/setModel");
   }
-
 
   //console.log('evaluate başlıyor');
   // evaluate(model, configobjesi, INPUTS, OUTPUTS);
