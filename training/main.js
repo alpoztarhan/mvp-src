@@ -66,7 +66,7 @@ var myconfig = {
   runSetLayers: true,
   saveModel: true,
   layers: [
-    { inputShape: [34], units: 32, activation: "relu" },
+    { inputShape: [68], units: 32, activation: "relu" },
     { units: 30, activation: "relu" },
     { units: 22, activation: "relu" },
     { units: 14, activation: "relu" },
@@ -100,7 +100,7 @@ var myconfig = {
       shuffle: true,
       validationSplit: 0.3,
       batchSize: 512,
-      epochs: 50,
+      epochs: 2000,
     },
   },
 };
@@ -146,7 +146,7 @@ function collectDataFromObjectArray(configobjesi) {
       indexKeypoint++
     ) {
       const keyPoint = poseObjArray[indexKeypoint];
-      PoseArray.push([keyPoint.id, keyPoint.score, [keyPoint.xRaw, keyPoint.yRaw]]);
+      PoseArray.push(keyPoint.id, keyPoint.score, keyPoint.xRaw, keyPoint.yRaw);
     }
 
     TRAINING_DATA.inputs.push(PoseArray);
@@ -204,8 +204,8 @@ async function setModel(configobjesi, model) {
     if (!fs.existsSync(configobjesi.modelSavePath + folderName)) {
       console.log(
         "modelSavePath klasörü yaratılacak:" +
-          configobjesi.modelSavePath +
-          folderName
+        configobjesi.modelSavePath +
+        folderName
       );
       fs.mkdirSync(configobjesi.modelSavePath + folderName);
     }
@@ -227,15 +227,15 @@ async function setModel(configobjesi, model) {
   //sonra isim ile kaydedelim
   await model.save(
     configobjesi.modelSaveProtocol +
-      configobjesi.modelSavePath +
-      configobjesi.modelSaveName
+    configobjesi.modelSavePath +
+    configobjesi.modelSaveName
   );
   fs.writeFileSync(
     configobjesi.modelSavePath +
-      configobjesi.modelSaveName +
-      "/" +
-      "labels" +
-      ".json",
+    configobjesi.modelSaveName +
+    "/" +
+    "labels" +
+    ".json",
     arrayString
   );
 }
@@ -268,22 +268,22 @@ function drawImage(digit) {
 function normalizeScalar(tensor, min, max) {
   const result = tf.tidy(function () {
     const MIN_VALUES = tf.scalar(min);
-    //console.log('normalizeScalar MIN_VALUES');
+    console.log('normalizeScalar MIN_VALUES');
     const MAX_VALUES = tf.scalar(max);
-    //console.log('normalizeScalar MAX_VALUES');
+    console.log('normalizeScalar MAX_VALUES');
 
     // Now calculate subtract the MIN_VALUE from every value in the Tensor
     // And store the results in a new Tensor.
     const TENSOR_SUBTRACT_MIN_VALUE = tf.sub(tensor, MIN_VALUES);
-    //console.log('normalizeScalar TENSOR_SUBTRACT_MIN_VALUE');
+    console.log('normalizeScalar TENSOR_SUBTRACT_MIN_VALUE');
 
     // Calculate the range size of possible values.
     const RANGE_SIZE = tf.sub(MAX_VALUES, MIN_VALUES);
-    //console.log('normalizeScalar RANGE_SIZE');
+    console.log('normalizeScalar RANGE_SIZE');
 
     // Calculate the adjusted values divided by the range size as a new Tensor.
     const NORMALIZED_VALUES = tf.div(TENSOR_SUBTRACT_MIN_VALUE, RANGE_SIZE);
-    //console.log('normalizeScalar NORMALIZED_VALUES');
+    console.log('normalizeScalar NORMALIZED_VALUES');
 
     // Return the important tensors.
     return NORMALIZED_VALUES;
@@ -328,7 +328,7 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
     var newInput;
 
     switch (configobjesi.normalizasyon.tip) {
-      case "scalar":
+      case "xscalar":
         var maximum = tf.max(INPUTS);
 
         newInput = normalizeScalar(
@@ -398,74 +398,88 @@ async function main(configobjesi) {
   setTimeout(dakikaSayac, 60000);
 
   try {
-    
 
-  const TRAINING_DATA = await getTrainingData(configobjesi);
 
-  //Training objesi içerisinden bunları parçalıyoruz heralde obje büyük olduğu için
-  //farklı obje referanslarına bindirerek sonraki işlemleri hızlandırıyor
-  const INPUTS = TRAINING_DATA.inputs;
-  const OUTPUTS = TRAINING_DATA.outputs;
+    const TRAINING_DATA = await getTrainingData(configobjesi);
+    console.log('getTrainingData çalıştı');
+    //Training objesi içerisinden bunları parçalıyoruz heralde obje büyük olduğu için
+    //farklı obje referanslarına bindirerek sonraki işlemleri hızlandırıyor
+    const INPUTS = TRAINING_DATA.inputs;
+    const OUTPUTS = TRAINING_DATA.outputs;
 
-  let model = await getModel(configobjesi);
+    let model = await getModel(configobjesi);
+    console.log('getModel çalıştı');
 
-  setLayers(configobjesi, model);
+    setLayers(configobjesi, model);
+    console.log('setLayers çalıştı');
 
-  if (configobjesi.runShuffleCombo) {
-    //ezberci eğitime hayır
-    tf.util.shuffleCombo(INPUTS, OUTPUTS);
-  }
+    if (configobjesi.runShuffleCombo) {
+      //ezberci eğitime hayır
+      tf.util.shuffleCombo(INPUTS, OUTPUTS);
+      console.log('shuffleCombo çalıştı');
+    }
 
-  var INPUTS_TENSOR;
-  // Input tensörünün 2 boyutlu olduğuna iman ediyoruz şimdilik...
-  switch (configobjesi.normalizasyon.tip) {
-    case "scalar":
-      INPUTS_TENSOR = normalizeScalar(
-        tf.tensor3d(INPUTS), // burası netleşecek
-        configobjesi.normalizasyon.params.min,
-        configobjesi.normalizasyon.params.max
-      );
-      break;
+ 
+    let INPUTS_TENSOR; // = tf.tensor3d(INPUTS, tensorshape, datatype); 
 
-    default:
-      break;
-  }
+    console.log('INPUTS_TENSOR');
+    console.log(INPUTS_TENSOR);
+    // Input tensörünün 2 boyutlu olduğuna iman ediyoruz şimdilik...
+    switch (configobjesi.normalizasyon.tip) {
+      case "scalar":
+        INPUTS_TENSOR = normalizeScalar(
+          tf.tensor2d(INPUTS), // burası netleşecek
+          configobjesi.normalizasyon.params.min,
+          configobjesi.normalizasyon.params.max
+        );
+        console.log('normalizeScalar çalıştı');
+        break;
 
-  // Create a dictionary to m ap text labels to numeric indices
-  const labelToIndex = {};
-  configobjesi.labelDictionary.forEach((label, index) => {
-    labelToIndex[label] = index;
-  });
+      default:
+        break;
+    }
 
-  // Convert text labels to numeric indices
-  const numericOutputs = OUTPUTS.map((label) => labelToIndex[label]);
 
-  //iman demişken çıktının da 1 boyutlu olacağına iman ediyoruz...
-  const OUTPUTS_TENSOR = tf[configobjesi.outputFeature.name](
-    tf.tensor1d(numericOutputs, "int32"),
-    configobjesi.labelDictionary.length
-  );
 
-  console.log("OUTPUTS_TENSOR");
-  console.log(OUTPUTS_TENSOR);
-  console.log("train başlıyor");
-  await train(model, configobjesi, INPUTS_TENSOR, OUTPUTS_TENSOR);
+    // Create a dictionary to m ap text labels to numeric indices
+    const labelToIndex = {};
+    configobjesi.labelDictionary.forEach((label, index) => {
+      labelToIndex[label] = index;
+    });
 
-  //console.log('train bitti');
+    console.log('labelToIndex çalıştı');
 
-  if (configobjesi.saveModel) {
-    console.log("setModel");
-    await setModel(configobjesi, model);
-    console.log("/setModel");
-  }
 
-  //console.log('evaluate başlıyor');
-  // evaluate(model, configobjesi, INPUTS, OUTPUTS);
-  //console.log('evaluate bitti');
+    // Convert text labels to numeric indices
+    const numericOutputs = OUTPUTS.map((label) => labelToIndex[label]);
 
-} catch (error) {
+    //iman demişken çıktının da 1 boyutlu olacağına iman ediyoruz...
+    const OUTPUTS_TENSOR = tf[configobjesi.outputFeature.name](
+      tf.tensor1d(numericOutputs, "int32"),
+      configobjesi.labelDictionary.length
+    );
+
+    console.log("OUTPUTS_TENSOR");
+    console.log(OUTPUTS_TENSOR);
+    console.log("train başlıyor");
+    await train(model, configobjesi, INPUTS_TENSOR, OUTPUTS_TENSOR);
+    console.log('train çalıştı');
+
+    //console.log('train bitti');
+
+    if (configobjesi.saveModel) {
+      console.log("setModel");
+      await setModel(configobjesi, model);
+      console.log("/setModel");
+    }
+
+    //console.log('evaluate başlıyor');
+    // evaluate(model, configobjesi, INPUTS, OUTPUTS);
+    //console.log('evaluate bitti');
+
+  } catch (error) {
     console.log(error);
-}
+  }
 }
 
 main(myconfig);
