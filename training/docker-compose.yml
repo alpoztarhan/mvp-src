@@ -4,7 +4,7 @@ services:
   mltelefit:
     build: .
     volumes: 
-      - ${posearray}:/tmp/inputs    
+      - ${posearray}:/tmp/inputs/
       - ${models}:/tmp/outputs/models    
     ports:
         - 8083:8083

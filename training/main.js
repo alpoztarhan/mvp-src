@@ -130,10 +130,6 @@ async function train(model, configobjesi, INPUTS_TENSOR, OUTPUTS_TENSOR) {
 
 function collectDataFromObjectArray(configobjesi) {
   const dataObjectArray = require(configobjesi.dataFromOjectArray);
-  // console.log('dataObjectArray');
-  // console.log(JSON.stringify(dataObjectArray.outputs));
-  // console.log('dataObjectArray');
-
   TRAINING_DATA = {
     inputs: [],
     outputs: [],
@@ -143,22 +139,21 @@ function collectDataFromObjectArray(configobjesi) {
 
   for (let index = 0; index < dataObjectArray.outputs.length; index++) {
     const poseObjArray = dataObjectArray.inputs[index];
-    // console.log('objinput');
-    // console.log(JSON.stringify(poseObjArray));
-    var poseArray = [];
+    var PoseArray = [];
     for (
       let indexKeypoint = 0;
       indexKeypoint < poseObjArray.length;
       indexKeypoint++
     ) {
       const keyPoint = poseObjArray[indexKeypoint];
-      poseArray.push(keyPoint.xRaw, keyPoint.yRaw);
+      PoseArray.push([keyPoint.id, keyPoint.score, [keyPoint.xRaw, keyPoint.yRaw]]);
     }
 
-    TRAINING_DATA.inputs.push(poseArray);
+    TRAINING_DATA.inputs.push(PoseArray);
 
     const label = dataObjectArray.outputs[index];
     const found = labelDictionary.find((x) => x === label);
+
     if (found !== undefined) {
       TRAINING_DATA.outputs.push(found);
     } else {
@@ -168,8 +163,6 @@ function collectDataFromObjectArray(configobjesi) {
   }
 
   configobjesi.labelDictionary = labelDictionary;
-  // console.log('return TRAINING_DATA');
-  // console.log(TRAINING_DATA);
   return TRAINING_DATA;
 }
 
@@ -391,6 +384,22 @@ function evaluate(model, configobjesi, INPUTS, OUTPUTS) {
 }
 
 async function main(configobjesi) {
+
+  var counter = 0;
+
+  function dakikaSayac() {
+
+    console.log("işlem başlayalı " + ++counter + " dakika geçti");
+
+    setTimeout(dakikaSayac, 60000);
+
+  }
+
+  setTimeout(dakikaSayac, 60000);
+
+  try {
+    
+
   const TRAINING_DATA = await getTrainingData(configobjesi);
 
   //Training objesi içerisinden bunları parçalıyoruz heralde obje büyük olduğu için
@@ -412,7 +421,7 @@ async function main(configobjesi) {
   switch (configobjesi.normalizasyon.tip) {
     case "scalar":
       INPUTS_TENSOR = normalizeScalar(
-        tf.tensor2d(INPUTS), // burası netleşecek
+        tf.tensor3d(INPUTS), // burası netleşecek
         configobjesi.normalizasyon.params.min,
         configobjesi.normalizasyon.params.max
       );
@@ -453,6 +462,10 @@ async function main(configobjesi) {
   //console.log('evaluate başlıyor');
   // evaluate(model, configobjesi, INPUTS, OUTPUTS);
   //console.log('evaluate bitti');
+
+} catch (error) {
+    console.log(error);
+}
 }
 
 main(myconfig);
